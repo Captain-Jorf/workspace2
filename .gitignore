@@ -1,0 +1,38 @@
+# داده‌های بالینی و زیست‌سنجشی هرگز در git قرار نگیرند
+data/
+*.dicom
+*.dcm
+*.nii
+*.nii.gz
+*.mha
+*.raw
+phantom/scans/
+
+# وزن مدل‌ها و خروجی‌های آموزش
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+*.onnx
+ml/runs/
+ml/wandb/
+lightning_logs/
+nnunet_results/
+
+# محیط‌ها و ابزار
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# سیستم‌عامل / ویرایشگر
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# اسناد محرمانه‌ی سرمایه‌گذاری (به‌صورت دستی مدیریت شوند)
+confidential/
+dataroom/
