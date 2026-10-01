@@ -23,6 +23,7 @@
 | [`research/03-technical-feasibility.md`](research/03-technical-feasibility.md) | فیزیک US صورت، بودجه‌ی خطای سیستم، سخت‌افزار AR، AI و داده |
 | [`research/04-regulatory-ip-market.md`](research/04-regulatory-ip-market.md) | MDR / AI Act / FDA / IMED / GDPR، IP، بازار، اقتصاد واحد، بودجه |
 | [`research/05-roadmap.md`](research/05-roadmap.md) | نقشه‌ی راه پیاده‌سازی، معماری، معیارهای Kill، برنامه‌ی ۹۰ روزه |
+| [`research/06-clarius-integration.md`](research/06-clarius-integration.md) | یکپارچه‌سازی با **Clarius L20** (دستگاه موجود پروژه): SDK رسمی، IMU، ریسک پلتفرم |
 
 ---
 

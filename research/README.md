@@ -14,6 +14,7 @@
 | [`03-technical-feasibility.md`](03-technical-feasibility.md) | فیزیک اولتراسوند، بودجۀ خطا، ردیابی سوزن، سخت‌افزار AR | چرا «۰٫۲ میلی‌متر» ممکن نیست |
 | [`04-regulatory-ip-market.md`](04-regulatory-ip-market.md) | MDR / AI Act / FDA / IMED، وضعیت پتنت، بازار و اقتصاد واحد | اعداد واقعی در برابر اعداد دک |
 | [`05-roadmap.md`](05-roadmap.md) | نقشۀ راه پیاده‌سازی، معماری پیشنهادی، تیم، بودجه، معیارهای Kill | برنامه‌ای که واقعاً قابل اجراست |
+| [`06-clarius-integration.md`](06-clarius-integration.md) | **دستگاه موجود پروژه: Clarius L20** — مشخصات، SDK رسمی (Cast/Research/IMU/Solum/Cloud)، ریسک پلتفرم، اقدامات ۳۰ روزه | مسیر فنی واقعی MVP |
 
 ---
 
