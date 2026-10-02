@@ -1,0 +1,6 @@
+numpy>=1.26
+scipy>=1.11
+pytest>=8.0
+# nnU-Net v2 و FAST separat نصب می‌شوند (سنگین‌اند):
+#   pip install nnunetv2
+#   FAST: از مخزن رسمی smistad/FAST یا ماژول Clarius آن
