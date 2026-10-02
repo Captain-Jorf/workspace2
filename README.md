@@ -27,6 +27,9 @@
 | [`research/07-cost-scenarios.md`](research/07-cost-scenarios.md) | **هزینه در پنج سناریو** + تعرفه‌های FY2027 FDA + گرانت EIC + گلوگاه بانکی/شرکتی |
 | [`research/08-legal-third-party-app.md`](research/08-legal-third-party-app.md) | قانونی بودن نوشتن اپ جداگانه روی Clarius: لایسنس، MDR، کلاس IIb در برابر **III**، ماده‌ی ۲۲، GDPR/ایران |
 | [`research/09-glossary.md`](research/09-glossary.md) | **واژه‌نامه**: معنی فارسی ساده‌ی هر اصطلاح و کوچه‌ی استفاده‌شده |
+| [`MURA-roadmap.pdf`](MURA-roadmap.pdf) | نقشه‌ی راه اجرایی (PDF فارسی، ۲۰ صفحه) |
+| [`MURA-roadmap.html`](MURA-roadmap.html) | همان نقشه‌ی راه به‌صورت **HTML تک‌فایلی** — فارسی کامل در هر مرورگر، قابل چاپ به PDF |
+| [`MURA-presentation.html`](MURA-presentation.html) | **دک ارائه‌ی ۱۸ اسلایدی** (HTML تک‌فایلی، ناوبری با کلید/کلیک، تمام‌صفحه) |
 | [`research/10-reading-list.md`](research/10-reading-list.md) | **فهرست مطالعه با لینک**: ۳۸ منبع مرتب‌شده، از کدام مقاله شروع کنید |
 
 ---
