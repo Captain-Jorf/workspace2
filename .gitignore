@@ -36,3 +36,9 @@ Thumbs.db
 # اسناد محرمانه‌ی سرمایه‌گذاری (به‌صورت دستی مدیریت شوند)
 confidential/
 dataroom/
+
+# ابزار ساخت PDF (فونت‌ها و خروجی‌های میانی)
+.venv-pdf/
+build/fonts/
+build/*.png
+build/*.pdf
