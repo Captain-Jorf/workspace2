@@ -9,10 +9,15 @@
 
 ## وضعیت
 - [x] نقشه راه تصویری
-- [ ] ویدئو/اسلاید معرفی
+- [x] ویدئو/اسلاید معرفی (`presentation/crm-presentation.mp4`، حدود ۴ دقیقه)
 - [ ] طراحی صفحات و مدل داده
 - [ ] MVP آفلاین
 - [ ] تست
 - [ ] نسخه PWA قابل نصب
 - [ ] دمو و اسکرین‌شات
 - [ ] همگام‌سازی آنلاین (اختیاری)
+
+
+## ویدئوی معرفی
+- فایل: `presentation/crm-presentation.mp4` (۱۹۲۰×۱۰۸۰، ۳۰ فریم، صدای فارسی مصنوعی)
+- ساخت مجدد: `make_slides.py` ← اسلایدها، `build_video.py` ← ترکیب با صدا (نیاز به Pillow، arabic-reshaper، python-bidi، imageio-ffmpeg و فونت Vazirmatn در `presentation/build/`)
