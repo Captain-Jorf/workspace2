@@ -1,16 +1,12 @@
-// اعمال حالت نمایش (روز/شب) و رنگ‌بندی روی کل برنامه، از طریق متغیرهای CSS روی <html>.
-import * as db from '../core/db.js';
+// حالت روز/شب و رنگ‌بندی روی کل برنامه، با متغیرهای CSS روی <html>.
+import * as store from '../core/store.js';
 import { colorwayById } from '../config/colorways.js';
 
 const INK = '#12293a';
 
-function channels(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
-
 function luminance(hex) {
-  const c = channels(hex).map((v) => {
+  const n = parseInt(hex.slice(1), 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
     const s = v / 255;
     return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
   });
@@ -28,19 +24,18 @@ export function onAccent(hex) {
 }
 
 export function applyTheme() {
-  const s = db.current();
+  const s = store.get();
   const root = document.documentElement;
   const dark = s.theme === 'dark';
   const cw = colorwayById(s.colorway);
   const accent = dark ? cw.dark.accent : cw.accent;
   const strong = dark ? cw.dark.accentStrong : cw.accentStrong;
-
   root.dataset.theme = dark ? 'dark' : 'light';
   root.dataset.colorway = cw.id;
   root.style.setProperty('--accent', accent);
   root.style.setProperty('--accent-strong', strong);
   root.style.setProperty('--on-accent', onAccent(accent));
-  root.style.setProperty('--accent-soft', cw.soft);
+  root.style.setProperty('--accent-soft', dark ? 'rgba(127, 190, 230, 0.16)' : cw.soft);
   root.style.setProperty('--grad-top', cw.tint);
   root.style.setProperty('--grad-mid', cw.mid);
 }

@@ -1,91 +1,107 @@
-// فرم ایجاد/ویرایش مشتری (کشوی راست). توضیحات مشتری اینجا است، نه یادداشت‌های صفحه‌ی جدا.
-import * as db from '../core/db.js';
+// فرم مشتری/سرنخ: ساخت و ویرایش. سه فیلد اجباری اصلی + مرحله + پیگیری بعدی + فیلدهای اختصاصی کسب‌وکار.
 import { h } from '../core/dom.js';
-import { cleanPhone, isPhone } from '../core/format.js';
-import { parseAmount } from '../core/validate.js';
-import { BUSINESSES, SOURCES, FOLLOW_UP_OPTIONS, MONEY_FROM_STAGE } from '../config/businesses.js';
-import { createCustomer, updateCustomer, needsAmount, stageFlags } from '../domain/customers.js';
-import { field, input, select, textarea, setError, clearErrors } from '../ui/form.js';
-import { openDialog, closeDialog, toast } from '../ui/dialog.js';
-import { extraControls, readExtra } from './extraFields.js';
+import { money, parseMoney } from '../core/format.js';
+import { addDays } from '../core/jalali.js';
+import { BUSINESSES } from '../config/businesses.js';
+import { createCustomer, updateCustomer, stages, bizKey } from '../domain/customers.js';
+import { openDialog } from '../ui/dialog.js';
+import { toast } from '../ui/toast.js';
+import { field, select, applyErrors, bindCtrlEnter } from './forms.js';
 
-/**
- * openCustomerForm({ stage, customer, onSaved })
- * - بدون customer: مشتری/اطلاعیه‌ی جدید در مرحله‌ی stage
- * - با customer: ویرایش
- */
-export function openCustomerForm({ stage = 0, customer = null, onSaved } = {}) {
-  const key = db.activeBizKey();
-  const biz = BUSINESSES[key];
+export const FOLLOW_OPTIONS = [
+  { value: 'none', label: 'بدون پیگیری' },
+  { value: '1', label: 'فردا' },
+  { value: '2', label: '۲ روز دیگر (پیشنهادی)' },
+  { value: '7', label: 'یک هفته دیگر' },
+  { value: '14', label: 'دو هفته دیگر' }
+];
+
+export function followUpFrom(value, now = Date.now()) {
+  if (value === 'none') return null;
+  return addDays(now, Number(value));
+}
+
+/** openCustomerForm({ customer, presetStage, onSaved }) */
+export function openCustomerForm({ customer = null, presetStage = 0, onSaved = () => {} } = {}) {
+  const key = bizKey();
+  const cfg = BUSINESSES[key];
+  const st = stages(key);
   const isEdit = !!customer;
-  const c = customer || {};
-  const startStage = isEdit ? c.stage : stage;
 
-  const name = input({ type: 'text', value: c.name || '', placeholder: 'نام مشتری یا شرکت', maxlength: '80' });
-  const phone = input({ type: 'tel', inputmode: 'numeric', value: c.phone || '', placeholder: '09xxxxxxxxx', maxlength: '11' });
-  const source = select(SOURCES.map((s) => ({ value: s, label: s })), c.source || SOURCES[0]);
-  const stageSel = select(biz.stages.map((s, i) => ({ value: i, label: s })), startStage);
-  const amount = input({ type: 'text', inputmode: 'numeric', value: c.amount ? String(c.amount) : '', placeholder: 'مثلاً ۶۵۰۰۰۰۰۰' });
-  const followList = isEdit ? [{ value: 0, label: 'بدون تغییر' }, ...FOLLOW_UP_OPTIONS] : FOLLOW_UP_OPTIONS;
-  const follow = select(followList, isEdit ? 0 : 2);
-  const notes = textarea({ rows: 3, placeholder: 'هر نکته‌ای که درباره‌ی این مشتری لازم است' });
-  notes.value = c.notes || '';
-  const formError = h('div', { class: 'form-alert', role: 'alert' });
+  const name = h('input', { class: 'input', value: customer?.name || '', autocomplete: 'off', placeholder: 'نام مشتری یا سازمان' });
+  const contact = h('input', { class: 'input', value: customer?.contact || '', autocomplete: 'off', placeholder: 'نام مسئول تماس' });
+  const phone = h('input', { class: 'input ltr', type: 'tel', inputmode: 'numeric', value: customer?.phone || '', placeholder: '09xxxxxxxxx' });
+  const source = select(cfg.sources.map((s) => ({ value: s, label: s })), customer?.source || '', 'انتخاب کن');
+  const stageSel = select(st.map((s, i) => ({ value: String(i), label: s.label })), String(customer?.stage ?? presetStage));
+  const amount = h('input', { class: 'input', inputmode: 'numeric', value: customer?.amount ? String(customer.amount) : '', placeholder: 'مثلاً ۲۵۰۰۰۰۰' });
+  const followOpts = isEdit ? [{ value: 'keep', label: 'بدون تغییر' }, ...FOLLOW_OPTIONS] : FOLLOW_OPTIONS;
+  const follow = select(followOpts, isEdit ? 'keep' : '2');
 
-  const amountHint = () => (needsAmount(Number(stageSel.value), key)
-    ? `برای «${biz.stages[Number(stageSel.value)]}» مبلغ الزامی است.`
-    : `مبلغ از مرحله‌ی «${biz.stages[MONEY_FROM_STAGE]}» به بعد الزامی می‌شود.`);
-  const amountField = field({ label: 'مبلغ (تومان)', control: amount, hint: amountHint() });
-  stageSel.addEventListener('change', () => {
-    amountField.querySelector('.hint').textContent = amountHint();
+  const amountWrap = field('مبلغ (تومان)', amount, { key: 'amount', hint: 'اختیاری' });
+  const amountHint = amountWrap.querySelector('.hint');
+  const syncAmount = () => {
+    const needed = !!st[Number(stageSel.value)]?.amount;
+    amountHint.textContent = needed ? 'برای این مرحله، مبلغ الزامی است' : 'اختیاری';
+  };
+  stageSel.addEventListener('change', syncAmount);
+  syncAmount();
+
+  const fieldInputs = {};
+  const customFields = cfg.fields.map((f) => {
+    const current = customer?.fields?.[f.key] ?? '';
+    let control;
+    if (f.kind === 'select') control = select(f.options.map((o) => ({ value: o, label: o })), current, 'انتخاب کن');
+    else control = h('input', { class: 'input', value: current, inputmode: f.kind === 'money' ? 'numeric' : 'text' });
+    fieldInputs[f.key] = control;
+    return field(f.label, control, { key: `fields.${f.key}` });
   });
 
-  const form = h('form', { class: 'form-grid', novalidate: true },
-    field({ label: 'نام', control: name, span: true }),
-    field({ label: 'شماره موبایل', control: phone, hint: 'فقط ۱۱ رقم، بدون فاصله' }),
-    field({ label: 'منبع آشنایی', control: source }),
-    field({ label: 'مرحله', control: stageSel }),
-    amountField,
-    field({ label: 'پیگیری بعدی', control: follow }),
-    ...extraControls(key, c.extra),
-    h('h3', { class: 'section-title span' }, 'توضیحات'),
-    field({ label: 'توضیحات مشتری', control: notes, span: true }),
-    formError);
+  const body = h('div', { class: 'form-grid' },
+    field('نام', name, { key: 'name', wide: true }),
+    field(cfg.nameStyle === 'company' ? 'نام مسئول' : 'تماس‌گیرنده (اختیاری)', contact, { key: 'contact' }),
+    field('شماره موبایل', phone, { key: 'phone', hint: 'مثلاً 09121234567' }),
+    field('منبع آشنایی', source, { key: 'source' }),
+    field('مرحله', stageSel, { key: 'stage' }),
+    amountWrap,
+    field('پیگیری بعدی', follow, { key: 'follow', hint: isEdit ? `فعلی: ${customer.followUpAt === null ? 'بدون پیگیری' : 'ثبت شده'}` : '' }),
+    ...customFields);
 
-  const save = () => {
-    clearErrors(form);
-    formError.textContent = '';
+  const submit = (close) => {
     const data = {
       name: name.value,
-      phone: cleanPhone(phone.value),
+      contact: contact.value,
+      phone: phone.value,
       source: source.value,
-      stage: Number(stageSel.value),
-      amount: parseAmount(amount.value),
-      follow: Number(follow.value),
-      notes: notes.value,
-      extra: readExtra(form, key)
+      stage: stageSel.value,
+      amount: parseMoney(amount.value),
+      fields: Object.fromEntries(Object.entries(fieldInputs).map(([k, el]) => [k, el.value]))
     };
-    let bad = false;
-    if (String(data.name).trim().length < 2) { setError(form, name.id, 'نام را حداقل ۲ حرف وارد کن.'); bad = true; }
-    if (!isPhone(data.phone)) { setError(form, phone.id, 'شماره موبایل باید ۱۱ رقم و با 09 شروع شود.'); bad = true; }
-    if (needsAmount(data.stage, key) && !(data.amount > 0)) { setError(form, amount.id, 'برای این مرحله مبلغ الزامی است.'); bad = true; }
-    if (bad) return;
-    const res = isEdit ? updateCustomer(c.id, data) : createCustomer(data);
-    if (res.error) { formError.textContent = res.error; return; }
-    closeDialog();
-    toast(isEdit ? 'تغییرات ذخیره شد.' : `«${data.name}» ثبت شد.`);
-    onSaved && onSaved(res.customer);
+    if (isEdit) {
+      if (follow.value !== 'keep') data.followUpAt = followUpFrom(follow.value);
+    } else {
+      data.followUpAt = followUpFrom(follow.value);
+    }
+    const result = isEdit ? updateCustomer(customer.id, data, key) : createCustomer(data, key);
+    if (result.errors) {
+      applyErrors(body, Object.fromEntries(Object.entries(result.errors).map(([k, v]) => [k === 'stage' ? 'stage' : k, v])));
+      return;
+    }
+    close();
+    toast(isEdit ? 'تغییرات مشتری ذخیره شد' : 'مشتری جدید ثبت شد');
+    onSaved(result.customer);
   };
-  form.addEventListener('submit', (e) => { e.preventDefault(); save(); });
 
-  openDialog({
+  const handle = openDialog({
     kind: 'drawer',
-    title: isEdit ? 'ویرایش مشتری' : (stageFlags(startStage, key).won ? 'مشتری جدید' : 'اطلاعیه‌ی جدید'),
-    sub: 'Ctrl+Enter برای ذخیره',
-    body: form,
+    title: isEdit ? 'ویرایش مشتری' : 'مشتری جدید',
+    sub: `${cfg.short} · فیلدهای ستاره‌دار اجباری‌اند`,
+    body,
     actions: [
-      { label: 'انصراف', variant: 'ghost', onClick: () => closeDialog() },
-      { label: 'ذخیره', variant: 'primary', primary: true, onClick: save }
+      { label: 'انصراف', variant: 'ghost', onClick: (close) => close() },
+      { label: 'ذخیره', variant: 'primary', onClick: (close) => submit(close) }
     ]
   });
+  bindCtrlEnter(handle.panel, () => submit(handle.close));
+  name.focus();
+  return handle;
 }

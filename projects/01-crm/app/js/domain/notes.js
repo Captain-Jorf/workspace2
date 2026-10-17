@@ -1,50 +1,44 @@
-// یادداشت‌های خصوصی مدیر/فروشنده: صفحه‌ی جدا در منوی کناری. در فرم یا جزئیات مشتری نمایش داده نمی‌شوند.
-import * as db from '../core/db.js';
+// یادداشت‌ها: صفحه‌ی مستقل (نه داخل فرم مشتری). هر یادداشت می‌تواند به یک مشتری وصل باشد.
+import * as store from '../core/store.js';
+import { bucket, bizKey } from './customers.js';
 
-export function list({ query = '' } = {}, key = db.activeBizKey()) {
-  const q = query.trim().toLowerCase();
-  return db.bucket(key).notes
-    .filter((n) => !q || n.title.toLowerCase().includes(q) || n.body.toLowerCase().includes(q))
-    .sort((a, b) => b.updatedAt - a.updatedAt);
+export function list(key = bizKey()) {
+  return bucket(key).notes.slice().sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
-export function create({ title, body = '', customerId = null }, key = db.activeBizKey()) {
-  if (!title || title.trim().length < 2) return { error: 'عنوان را حداقل ۲ حرف وارد کن.' };
-  const now = Date.now();
-  const note = {
-    id: db.nextId('nextNote', key),
-    title: title.trim(),
-    body: String(body || '').trim(),
-    customerId: customerId || null,
-    createdAt: now,
-    updatedAt: now
-  };
-  db.bucket(key).notes.push(note);
-  db.touch();
+export function createNote({ text, customerId = null }, key = bizKey(), now = Date.now()) {
+  const body = String(text || '').trim();
+  if (!body) return { errors: { text: 'متن یادداشت خالی است' } };
+  const note = { id: store.nextSeq('note', key), text: body, customerId, createdAt: now, updatedAt: now };
+  bucket(key).notes.push(note);
+  store.commit();
   return { note };
 }
 
-export function update(id, { title, body = '', customerId = null }, key = db.activeBizKey()) {
-  const note = db.bucket(key).notes.find((n) => n.id === id);
-  if (!note) return { error: 'یادداشت پیدا نشد.' };
-  if (!title || title.trim().length < 2) return { error: 'عنوان را حداقل ۲ حرف وارد کن.' };
-  Object.assign(note, { title: title.trim(), body: String(body || '').trim(), customerId: customerId || null, updatedAt: Date.now() });
-  db.touch();
+export function updateNote(id, { text, customerId = null }, key = bizKey(), now = Date.now()) {
+  const note = bucket(key).notes.find((n) => n.id === id);
+  if (!note) return { error: 'یادداشت پیدا نشد' };
+  const body = String(text || '').trim();
+  if (!body) return { errors: { text: 'متن یادداشت خالی است' } };
+  Object.assign(note, { text: body, customerId, updatedAt: now });
+  store.commit();
   return { note };
 }
 
-export function remove(id, key = db.activeBizKey()) {
-  const b = db.bucket(key);
-  const idx = b.notes.findIndex((n) => n.id === id);
-  if (idx < 0) return null;
-  const [note] = b.notes.splice(idx, 1);
-  db.touch();
-  return { note, index: idx };
+export function removeNote(id, key = bizKey()) {
+  const b = bucket(key);
+  const index = b.notes.findIndex((n) => n.id === id);
+  if (index < 0) return { error: 'یادداشت پیدا نشد' };
+  const [note] = b.notes.splice(index, 1);
+  store.commit();
+  return { snapshot: { note, index } };
 }
 
-export function restore(snapshot, key = db.activeBizKey()) {
-  if (!snapshot) return;
-  const b = db.bucket(key);
-  b.notes.splice(Math.min(snapshot.index, b.notes.length), 0, snapshot.note);
-  db.touch();
+export function restoreNote(snapshot, key = bizKey()) {
+  const b = bucket(key);
+  if (!b.notes.some((n) => n.id === snapshot.note.id)) {
+    b.notes.splice(Math.min(snapshot.index, b.notes.length), 0, snapshot.note);
+    store.commit();
+  }
+  return { note: snapshot.note };
 }

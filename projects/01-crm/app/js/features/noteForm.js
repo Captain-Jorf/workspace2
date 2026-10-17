@@ -1,42 +1,41 @@
-// یادداشت‌های داخلی: فرم ایجاد/ویرایش (صفحه‌ی یادداشت‌ها، نه فرم مشتری)
-import * as db from '../core/db.js';
+// فرم یادداشت: یادداشت آزاد یا وصل‌شده به یک مشتری (از صفحه‌ی یادداشت‌ها، نه از فرم مشتری).
+import * as store from '../core/store.js';
 import { h } from '../core/dom.js';
+import * as cust from '../domain/customers.js';
 import * as notes from '../domain/notes.js';
-import { list as listCustomers } from '../domain/customers.js';
-import { field, input, select, textarea, setError, clearErrors } from '../ui/form.js';
-import { openDialog, closeDialog, toast } from '../ui/dialog.js';
+import { openDialog } from '../ui/dialog.js';
+import { toast } from '../ui/toast.js';
+import { field, select, applyErrors, bindCtrlEnter } from './forms.js';
 
-export function openNoteForm({ note = null, onDone } = {}) {
-  const key = db.activeBizKey();
-  const isEdit = !!note;
-  const title = input({ type: 'text', value: note?.title || '', placeholder: 'عنوان کوتاه یادداشت', maxlength: '80' });
-  const customers = listCustomers({}, key).sort((a, b) => a.name.localeCompare(b.name, 'fa'));
-  const link = select([{ value: '', label: '— بدون مشتری —' }, ...customers.map((c) => ({ value: c.id, label: c.name }))], note?.customerId ?? '');
-  const body = textarea({ rows: 6, placeholder: 'متن یادداشت' });
-  body.value = note?.body || '';
-  const formError = h('div', { class: 'form-alert', role: 'alert' });
-  const form = h('form', { class: 'form-grid', novalidate: true },
-    field({ label: 'عنوان', control: title, span: true }),
-    field({ label: 'مرتبط با مشتری', control: link, span: true }),
-    field({ label: 'متن', control: body, span: true }),
-    formError);
+export function openNoteForm({ note = null, onSaved = () => {} } = {}) {
+  const key = store.get().activeBiz;
+  const customers = cust.list({}, key).slice().sort((a, b) => a.name.localeCompare(b.name, 'fa'));
+  const text = h('textarea', { class: 'input', rows: '5', placeholder: 'متن یادداشت…' }, note?.text || '');
+  const link = select(customers.map((c) => ({ value: String(c.id), label: c.name })), note?.customerId ? String(note.customerId) : '', 'بدون مشتری');
+  const body = h('div', { class: 'form-grid' },
+    field('متن یادداشت', text, { key: 'text', wide: true }),
+    field('مربوط به مشتری (اختیاری)', link, { key: 'customerId', wide: true }));
 
-  const save = () => {
-    clearErrors(form);
-    formError.textContent = '';
-    const data = { title: title.value, body: body.value, customerId: link.value ? Number(link.value) : null };
-    const res = isEdit ? notes.update(note.id, data, key) : notes.create(data, key);
-    if (res.error) { setError(form, title.id, res.error); return; }
-    closeDialog();
-    toast(isEdit ? 'یادداشت ذخیره شد.' : 'یادداشت ثبت شد.');
-    onDone && onDone(res.note);
+  const submit = (close) => {
+    const data = { text: text.value, customerId: link.value ? Number(link.value) : null };
+    const r = note ? notes.updateNote(note.id, data, key) : notes.createNote(data, key);
+    if (r.errors) {
+      applyErrors(body, r.errors);
+      return;
+    }
+    close();
+    toast(note ? 'یادداشت ذخیره شد' : 'یادداشت ثبت شد');
+    onSaved(r.note);
   };
-  form.addEventListener('submit', (e) => { e.preventDefault(); save(); });
-  openDialog({
-    kind: 'drawer', title: isEdit ? 'ویرایش یادداشت' : 'یادداشت جدید', sub: 'Ctrl+Enter برای ذخیره', body: form,
+  const handle = openDialog({
+    kind: 'modal', size: 'small', title: note ? 'ویرایش یادداشت' : 'یادداشت جدید', sub: 'Ctrl+Enter برای ذخیره',
+    body,
     actions: [
-      { label: 'انصراف', variant: 'ghost', onClick: () => closeDialog() },
-      { label: 'ذخیره', variant: 'primary', primary: true, onClick: save }
+      { label: 'انصراف', variant: 'ghost', onClick: (close) => close() },
+      { label: 'ذخیره', variant: 'primary', onClick: (close) => submit(close) }
     ]
   });
+  bindCtrlEnter(handle.panel, () => submit(handle.close));
+  text.focus();
+  return handle;
 }

@@ -1,105 +1,164 @@
-// فاکتورها: صدور، ثبت پرداخت، ویرایش، کپی، چاپ، اشتراک‌گذاری و حذف (فقط مدیر).
-import { h, clear } from '../core/dom.js';
-import { money, jDate, toFa, jNumeric } from '../core/format.js';
-import * as db from '../core/db.js';
-import * as invoices from '../domain/invoices.js';
-import { RANGES } from '../domain/invoices.js';
-import { openInvoiceForm, openPayment } from '../features/invoiceForm.js';
-import { printInvoice, openShare } from '../features/invoiceShare.js';
-import { openCustomerDetail } from '../features/customerDetail.js';
-import { downloadCsv } from '../core/download.js';
-import { confirmDialog, toast } from '../ui/dialog.js';
-import { select } from '../ui/form.js';
-import { allowed, emptyState, pageHead, kpi } from './common.js';
+// فاکتورها: چیدمان دو ستونه (فهرست + جزئیات). دکمه‌های عملیات: ثبت پرداخت، ویرایش، کپی، چاپ، اشتراک‌گذاری، حذف.
+import { h } from '../core/dom.js';
+import { money, parseMoney, plural } from '../core/format.js';
+import { formatDate, formatDateTime } from '../core/jalali.js';
+import { BUSINESSES } from '../config/businesses.js';
+import { can } from '../config/roles.js';
+import * as inv from '../domain/invoices.js';
+import * as cust from '../domain/customers.js';
+import * as store from '../core/store.js';
+import { openDialog, confirmDialog } from '../ui/dialog.js';
+import { toast } from '../ui/toast.js';
+import { field, applyErrors, bindCtrlEnter } from '../features/forms.js';
+import { openInvoiceForm } from '../features/invoiceForm.js';
+import { openInvoiceShare, printInvoice } from '../features/invoiceShare.js';
+import { emptyState } from './parts.js';
+import { ctx } from '../ui/context.js';
 
 export const meta = {
-  id: 'invoices', title: 'فاکتورها', label: 'فاکتورها', icon: '▤', filters: false, search: false
+  label: 'فاکتورها',
+  icon: '▤',
+  title: 'فاکتورها',
+  sub: () => `${BUSINESSES[store.get().activeBiz].title} · فهرست و جزئیات فاکتور`,
+  chips: false,
+  actions: ['invoice']
 };
 
-const BADGE = { draft: 'draft', issued: 'issued', partial: 'partial', overdue: 'over', paid: 'paid' };
+const STATUS_TONE = { draft: 'draft', pending: 'pending', overdue: 'overdue', paid: 'paid' };
 
-export function mount(root) {
-  let rangeDays = 0;
-  const wrap = h('div', { class: 'view invoices' });
-  root.append(wrap);
+export function render(root, { refresh }) {
+  const key = store.get().activeBiz;
+  const role = store.get().session?.role;
+  const writable = can(role, 'invoice.write');
+  const now = Date.now();
+  const rows = inv.list(ctx.invFilter, key, now);
 
-  function refresh() {
-    const all = invoices.list({ rangeDays: 0 });
-    const rows = invoices.list({ rangeDays });
-    const active = rows.filter((i) => !i.draft);
-    const collected = rows.reduce((s, i) => s + invoices.paidTotal(i), 0);
-    const outstanding = active.reduce((s, i) => s + invoices.remaining(i), 0);
-    const overdue = active.filter((i) => invoices.statusOf(i) === 'overdue').length;
-    const range = select(RANGES, rangeDays, { 'aria-label': 'بازه‌ی زمانی' });
-    range.addEventListener('change', () => { rangeDays = Number(range.value); refresh(); });
-    clear(wrap);
-    wrap.append(
-      pageHead('فاکتورها', `${toFa(all.length)} فاکتور در کل · شماره‌ی هر فاکتور از زمان ثبت ساخته می‌شود`, [
-        range,
-        allowed('invoice.create') ? h('button', { class: 'btn primary', type: 'button', onClick: () => openInvoiceForm({ onDone: refresh }) }, 'فاکتور جدید') : null,
-        h('button', { class: 'btn ghost', type: 'button', onClick: () => exportCsv(rows) }, 'خروجی CSV')
-      ]),
-      h('div', { class: 'kpis small' },
-        kpi('فاکتور صادرشده', toFa(active.length)),
-        kpi('وصول‌شده', money(collected)),
-        kpi('مانده', money(outstanding)),
-        kpi('معوق', toFa(overdue), overdue ? 'over' : '')),
-      rows.length ? table(rows) : emptyState('در این بازه فاکتوری نیست.', allowed('invoice.create')
-        ? h('button', { class: 'btn primary', type: 'button', onClick: () => openInvoiceForm({}) }, 'فاکتور جدید') : null));
+  const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'فیلتر فاکتور' },
+    ...inv.INVOICE_FILTERS.map((f) => h('button', {
+      class: 'chip', type: 'button', 'aria-pressed': String(ctx.invFilter === f.id),
+      onClick: () => { ctx.invFilter = f.id; refresh(); }
+    }, f.label)));
+
+  const list = h('div', { class: 'split-list' });
+  if (!rows.length) list.append(emptyState('فاکتوری نیست', 'با دکمه‌ی «فاکتور جدید» اولین فاکتور را بساز.'));
+  for (const i of rows) {
+    const c = cust.byId(i.customerId, key);
+    const status = inv.invoiceStatus(i, now);
+    const t = inv.totals(i);
+    list.append(h('button', {
+      class: `inv-row${ctx.invId === i.id ? ' on' : ''}`, type: 'button', dataset: { id: String(i.id) },
+      onClick: () => { select(i.id); refresh(); }
+    },
+    h('div', { class: 'inv-row-top' },
+      h('strong', { class: 'ltr', text: i.no }),
+      h('span', { class: `status ${STATUS_TONE[status]}`, text: inv.STATUS_LABEL[status] })),
+    h('div', { class: 'muted small', text: `${c?.name || 'بدون مشتری'} · ${formatDate(i.createdAt)}` }),
+    h('div', { class: 'inv-row-amount', text: money(t.total) })));
   }
 
-  function table(rows) {
-    return h('div', { class: 'table-wrap' },
-      h('table', { class: 'tbl' },
-        h('thead', {}, h('tr', {}, ['شماره فاکتور', 'تاریخ صدور', 'مشتری', 'مبلغ', 'پرداخت‌شده', 'مانده', 'وضعیت', 'عملیات'].map((t) => h('th', { text: t })))),
-        h('tbody', {}, rows.map((inv) => {
-          const status = invoices.statusOf(inv);
-          const left = invoices.remaining(inv);
-          return h('tr', { dataset: { id: inv.id } },
-            h('td', { class: 'num' }, toFa(inv.code)),
-            h('td', {}, jDate(inv.issued)),
-            h('td', {}, h('button', { class: 'link-btn', type: 'button', onClick: () => openCustomerDetail(inv.customerId) }, inv.custName)),
-            h('td', { class: 'num' }, money(inv.amount)),
-            h('td', { class: 'num' }, money(invoices.paidTotal(inv))),
-            h('td', { class: 'num' }, money(left)),
-            h('td', {}, h('span', { class: `badge-st ${BADGE[status]}`, text: invoices.STATUS_LABEL[status] })),
-            h('td', { class: 'actions' }, actions(inv, left, status)));
-        }))));
+  const selectedId = ctx.invId;
+  const selected = rows.find((i) => i.id === selectedId) || rows[0] || null;
+  if (selected && selected.id !== selectedId) ctx.invId = selected.id;
+
+  root.append(
+    h('div', { class: 'toolbar' }, chips),
+    h('div', { class: 'split' },
+      h('section', { class: 'split-col list-col' },
+        h('p', { class: 'muted small', text: `${plural(rows.length, 'فاکتور', 'فاکتور')}` }),
+        list),
+      h('section', { class: 'split-col detail-col' },
+        selected ? detail(selected) : emptyState('فاکتوری انتخاب نشده', 'یک فاکتور را از فهرست انتخاب کن.')))
+  );
+
+  function select(id) {
+    ctx.invId = id;
   }
 
-  function actions(inv, left, status) {
-    const list = [];
-    if (allowed('invoice.pay') && status !== 'draft' && left > 0) list.push(btn('ثبت پرداخت', 'primary', () => openPayment(inv.id, refresh)));
-    if (allowed('invoice.edit')) list.push(btn('ویرایش', 'ghost', () => openInvoiceForm({ invoice: inv, onDone: refresh })));
-    if (allowed('invoice.create')) list.push(btn('کپی', 'ghost', () => {
-      const res = invoices.copy(inv.id);
-      if (res?.error) toast(res.error);
-      else toast(`نسخه‌ی پیش‌نویس ${toFa(res.invoice.code)} ساخته شد.`);
-    }));
-    list.push(btn('چاپ', 'ghost', () => printInvoice(inv.id)));
-    list.push(btn('اشتراک‌گذاری', 'ghost', () => openShare(inv.id)));
-    if (allowed('invoice.delete')) list.push(btn('حذف', 'danger-text', () => remove(inv)));
-    return list;
+  function detail(i) {
+    const c = cust.byId(i.customerId, key);
+    const t = inv.totals(i);
+    const status = inv.invoiceStatus(i, now);
+    const btn = (label, onClick, variant = '', disabled = false) => h('button', { class: `btn ${variant}`.trim(), type: 'button', disabled, onClick }, label);
+    const actions = h('div', { class: 'invoice-actions', role: 'toolbar', 'aria-label': 'عملیات فاکتور' },
+      writable && t.due > 0 && i.status !== 'draft' ? btn('ثبت پرداخت', () => paymentDialog(i), 'primary') : null,
+      writable ? btn('ویرایش', () => openInvoiceForm({ invoice: i, onSaved: refresh })) : null,
+      writable ? btn('کپی', () => {
+        const r = inv.copyInvoice(i.id, key, Date.now());
+        if (r.invoice) {
+          select(r.invoice.id);
+          toast(`کپی فاکتور با شماره‌ی ${r.invoice.no} ساخته شد`);
+        }
+      }) : null,
+      btn('چاپ', () => printInvoice(i, c)),
+      btn('اشتراک‌گذاری', () => openInvoiceShare(i, c)),
+      writable ? btn('حذف', () => confirmDialog({
+        title: 'حذف فاکتور',
+        message: `فاکتور ${i.no} حذف شود؟ تا ۵ ثانیه می‌توانی بازگردانی.`,
+        confirmLabel: 'حذف',
+        danger: true,
+        onConfirm: () => {
+          const r = inv.removeInvoice(i.id, key);
+          if (!r.snapshot) return;
+          select(null);
+          toast('فاکتور حذف شد', { actionLabel: 'بازگردانی', onAction: () => { inv.restoreInvoice(r.snapshot, key); refresh(); } });
+        }
+      }), 'danger') : null);
+
+    const paid = i.payments.map((p) => h('div', { class: 'report-row' },
+      h('span', { class: 'grow', text: formatDateTime(p.at) }),
+      h('strong', { text: money(p.amount) })));
+
+    return h('article', { class: 'invoice-card' },
+      h('header', { class: 'invoice-head' },
+        h('div', {},
+          h('h2', { class: 'ltr', text: i.no }),
+          h('p', { class: 'muted small', text: `${c?.name || 'بدون مشتری'} · صادر: ${formatDateTime(i.createdAt)}` })),
+        h('span', { class: `status ${STATUS_TONE[status]}`, text: inv.STATUS_LABEL[status] })),
+      actions,
+      h('dl', { class: 'kv' },
+        kv('سررسید', i.dueAt ? formatDate(i.dueAt) : 'بدون سررسید'),
+        kv('مانده', money(t.due)),
+        i.notes ? kv('یادداشت', i.notes) : null),
+      h('div', { class: 'tbl-wrap' },
+        h('table', { class: 'tbl items-view' },
+          h('thead', {}, h('tr', {}, h('th', { text: 'شرح' }), h('th', { text: 'تعداد' }), h('th', { text: 'قیمت واحد' }), h('th', { text: 'جمع' }))),
+          h('tbody', {}, ...i.items.map((it) => h('tr', {},
+            h('td', { text: it.title }), h('td', { text: String(it.qty) }),
+            h('td', { text: money(it.price) }), h('td', { text: money(it.qty * it.price) })))))),
+      h('div', { class: 'totals' },
+        h('div', { class: 'totals-row' }, h('span', { text: 'جمع اقلام' }), h('strong', { text: money(t.subtotal) })),
+        h('div', { class: 'totals-row' }, h('span', { text: 'تخفیف' }), h('strong', { text: money(t.discount) })),
+        h('div', { class: 'totals-row total' }, h('span', { text: 'مبلغ قابل پرداخت' }), h('strong', { text: money(t.total) }))),
+      paid.length ? h('section', { class: 'dsec' }, h('h3', { text: 'پرداخت‌ها' }), ...paid) : null);
   }
 
-  async function remove(inv) {
-    const ok = await confirmDialog({ title: 'حذف فاکتور', message: `فاکتور ${toFa(inv.code)} حذف شود؟`, confirmLabel: 'حذف فاکتور', danger: true });
-    if (!ok) return;
-    const snap = invoices.remove(inv.id);
-    if (snap) toast('فاکتور حذف شد.', { ms: 5000, action: { label: 'بازگردانی', run: () => invoices.restore(snap) } });
+  function paymentDialog(i) {
+    const due = inv.totals(i).due;
+    const amount = h('input', { class: 'input', inputmode: 'numeric', value: String(due) });
+    const body = h('div', { class: 'form-grid' },
+      field('مبلغ پرداخت (تومان)', amount, { key: 'amount', hint: `مانده: ${money(due)}`, wide: true }));
+    const submit = (close) => {
+      const r = inv.addPayment(i.id, parseMoney(amount.value), key);
+      if (r.error) {
+        applyErrors(body, { amount: r.error });
+        return;
+      }
+      close();
+      toast('پرداخت ثبت شد');
+      refresh();
+    };
+    const handle = openDialog({
+      kind: 'modal', size: 'small', title: 'ثبت پرداخت', sub: `فاکتور ${i.no}`,
+      body,
+      actions: [
+        { label: 'انصراف', variant: 'ghost', onClick: (close) => close() },
+        { label: 'ثبت پرداخت', variant: 'primary', onClick: (close) => submit(close) }
+      ]
+    });
+    bindCtrlEnter(handle.panel, () => submit(handle.close));
+    amount.focus();
+    amount.select();
   }
-
-  function exportCsv(rows) {
-    const out = [['شماره فاکتور', 'تاریخ صدور', 'مهلت', 'مشتری', 'مبلغ (تومان)', 'پرداخت‌شده', 'مانده', 'وضعیت']];
-    rows.forEach((i) => out.push([i.code, jNumeric(i.issued), jNumeric(i.due), i.custName, i.amount, invoices.paidTotal(i), invoices.remaining(i), invoices.STATUS_LABEL[invoices.statusOf(i)]]));
-    downloadCsv(out, `crm-${db.activeBizKey()}-invoices.csv`);
-    toast('فایل CSV فاکتورها ساخته شد.');
-  }
-
-  refresh();
-  return { refresh };
 }
 
-function btn(label, variant, onClick) {
-  return h('button', { class: `btn ${variant} sm`.trim(), type: 'button', onClick }, label);
-}
+const kv = (label, value) => h('div', { class: 'kv-row' }, h('dt', { text: label }), h('dd', { text: value }));

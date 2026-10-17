@@ -1,14 +1,10 @@
-/* چاپ فاکتور: فقط سند فاکتور دیده می‌شود */
-.print-area { display: none; }
 @media print {
-  body * { visibility: hidden !important; }
-  .print-area, .print-area * { visibility: visible !important; }
-  .print-area { display: block !important; position: absolute; inset: 0 auto auto 0; width: 100%; background: #fff; }
-  .print-doc { color: #000; background: #fff; font-family: "Shoor", sans-serif; padding: 24px; }
-  .print-doc h1 { font-size: 26px; }
-  .print-sub { color: #444; margin-bottom: 16px; }
-  .print-meta, .print-rows { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-  .print-meta th, .print-meta td, .print-rows th, .print-rows td { border: 1px solid #999; padding: 8px 10px; text-align: right; }
-  .print-meta th, .print-rows th { width: 34%; background: #f2f2f2; }
-  .print-foot { color: #666; font-size: 12px; margin-top: 18px; }
+  @page { size: A5; margin: 12mm; }
+  body > *:not(#printArea) { display: none !important; }
+  #printArea { display: block !important; position: static; }
+  .print-sheet { color: #000; background: #fff; font-family: 'Shoor', sans-serif; }
+  .print-sheet table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+  .print-sheet th, .print-sheet td { border-bottom: 1px solid #999; padding: 6px; text-align: right; }
+  .print-total { font-weight: 700; font-size: 1.1em; }
 }
+.print-area { display: none; }

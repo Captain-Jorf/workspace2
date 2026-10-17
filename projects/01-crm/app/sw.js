@@ -1,24 +1,19 @@
-// service worker: پوسته‌ی برنامه را برای کار آفلاین کش می‌کند (شبکه‌ی اول، سپس کش)
+// Service worker: پوسته‌ی برنامه را برای کار آفلاین کش می‌کند (شبکه‌ی اول، سپس کش).
 const VERSION = 'crm-v6-2026-10-17';
 const SHELL = [
-  './', 'index.html', 'manifest.webmanifest',
-  'css/app.css', 'css/print.css', 'assets/icon.svg',
+  './', 'index.html', 'manifest.webmanifest', 'css/app.css', 'css/print.css', 'assets/icon.svg',
   'assets/fonts/ShoorRounded-Regular.ttf', 'assets/fonts/ShoorRounded-Medium.ttf',
   'assets/fonts/ShoorRounded-SemiBold.ttf', 'assets/fonts/ShoorRounded-Bold.ttf',
-  'js/main.js', 'js/ui/shell.js', 'js/ui/dialog.js', 'js/ui/form.js', 'js/ui/start.js',
-  'js/core/db.js', 'js/core/dom.js', 'js/core/bus.js', 'js/core/format.js', 'js/core/jalali.js',
-  'js/core/csv.js', 'js/core/download.js', 'js/core/invoiceCode.js', 'js/core/permissions.js',
-  'js/core/rng.js', 'js/core/storage.js', 'js/core/validate.js',
-  'js/config/businesses.js', 'js/domain/auth.js', 'js/domain/customers.js', 'js/domain/invoices.js',
-  'js/domain/notes.js', 'js/domain/reports.js', 'js/domain/seed.js',
-  'js/features/activity.js', 'js/features/customerDetail.js', 'js/features/customerForm.js',
-  'js/features/extraFields.js', 'js/features/importMerge.js', 'js/features/invoiceForm.js',
-  'js/features/invoiceShare.js', 'js/features/noteForm.js', 'js/features/settings.js',
-  'js/views/index.js', 'js/views/common.js', 'js/views/today.js', 'js/views/notices.js',
-  'js/views/customers.js', 'js/views/invoices.js', 'js/views/notes.js', 'js/views/archive.js', 'js/views/reports.js',
-  'js/config/colorways.js',
-  'js/ui/palette.js',
-  'js/ui/theme.js',
+  'js/main.js',
+  'js/core/dom.js', 'js/core/format.js', 'js/core/jalali.js', 'js/core/rng.js', 'js/core/store.js', 'js/core/download.js',
+  'js/config/businesses.js', 'js/config/colorways.js', 'js/config/roles.js',
+  'js/domain/auth.js', 'js/domain/customers.js', 'js/domain/invoices.js', 'js/domain/notes.js',
+  'js/data/seed.js',
+  'js/ui/context.js', 'js/ui/dialog.js', 'js/ui/toast.js', 'js/ui/theme.js', 'js/ui/shell.js', 'js/ui/start.js', 'js/ui/palette.js',
+  'js/features/forms.js', 'js/features/customerForm.js', 'js/features/customerDetail.js', 'js/features/invoiceForm.js',
+  'js/features/invoiceShare.js', 'js/features/noteForm.js',
+  'js/views/index.js', 'js/views/parts.js', 'js/views/today.js', 'js/views/notices.js', 'js/views/customers.js',
+  'js/views/invoices.js', 'js/views/notes.js', 'js/views/archive.js', 'js/views/reports.js', 'js/views/settings.js'
 ];
 
 self.addEventListener('install', (event) => {
@@ -33,21 +28,15 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// شبکه‌ی اول: هر بار اگر اینترنت یا سرور در دسترس باشد نسخه‌ی تازه گرفته می‌شود؛ در غیر این صورت از کش آفلاین استفاده می‌شود
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-  if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
+  const req = event.request;
+  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   event.respondWith(
-    caches.open(VERSION).then(async (cache) => {
-      try {
-        const res = await fetch(event.request);
-        if (res && res.ok) cache.put(event.request, res.clone());
+    fetch(req)
+      .then((res) => {
+        if (res.ok) caches.open(VERSION).then((c) => c.put(req, res.clone()));
         return res;
-      } catch (e) {
-        const cached = await cache.match(event.request, { ignoreSearch: true });
-        if (cached) return cached;
-        throw e;
-      }
-    })
+      })
+      .catch(() => caches.match(req).then((hit) => hit || caches.match('index.html')))
   );
 });

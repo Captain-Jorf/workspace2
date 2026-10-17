@@ -1,70 +1,47 @@
-// گزارش‌ها: همه‌ی عددها از داده‌ی واقعی همین دستگاه محاسبه می‌شوند.
-import { h, clear } from '../core/dom.js';
-import { money, toFa, jNumeric } from '../core/format.js';
-import * as db from '../core/db.js';
-import { compute, REPORT_RANGES } from '../domain/reports.js';
-import { downloadCsv } from '../core/download.js';
-import { toast } from '../ui/dialog.js';
-import { select } from '../ui/form.js';
-import { allowed, pageHead, kpi, emptyState } from './common.js';
+// گزارش‌ها: شاخص‌های کلیدی و جدول مراحل. بدون نمودار.
+import { h } from '../core/dom.js';
+import { money } from '../core/format.js';
+import { BUSINESSES } from '../config/businesses.js';
+import * as store from '../core/store.js';
+import * as cust from '../domain/customers.js';
+import * as inv from '../domain/invoices.js';
+import { kpi } from './parts.js';
 
 export const meta = {
-  id: 'reports', title: 'گزارش‌ها', label: 'گزارش‌ها', icon: '▥', filters: false, search: false
+  label: 'گزارش‌ها',
+  icon: '∑',
+  title: 'گزارش‌ها',
+  sub: () => `${BUSINESSES[store.get().activeBiz].title} · خلاصه‌ی فروش و پیگیری`,
+  chips: false,
+  actions: ['csv']
 };
 
-export function mount(root) {
-  let days = 30;
-  const wrap = h('div', { class: 'view reports' });
-  root.append(wrap);
+export function render(root) {
+  const key = store.get().activeBiz;
+  const cfg = BUSINESSES[key];
+  const now = Date.now();
+  const all = cust.list({}, key);
+  const counts = cust.countsByStage(key);
+  const won = cfg.stages.map((s, i) => (s.won ? i : -1)).filter((i) => i >= 0);
+  const wonAmount = all.filter((c) => won.includes(c.stage)).reduce((s, c) => s + c.amount, 0);
+  const pipeline = all.filter((c) => !cust.isClosed(c, key)).reduce((s, c) => s + c.amount, 0);
+  const invoices = inv.list('all', key, now);
+  const due = invoices.reduce((s, i) => s + inv.totals(i).due, 0);
+  const overdue = invoices.filter((i) => inv.invoiceStatus(i, now) === 'overdue').length;
+  const max = Math.max(1, ...counts.map((c) => c.count));
 
-  function refresh() {
-    const key = db.activeBizKey();
-    const r = compute(days, key);
-    const range = select(REPORT_RANGES, days, { 'aria-label': 'بازه‌ی گزارش' });
-    range.addEventListener('change', () => { days = Number(range.value); refresh(); });
-    clear(wrap);
-    wrap.append(
-      pageHead('گزارش‌ها', 'عددها از داده‌ی همین دستگاه محاسبه می‌شوند', [
-        range,
-        h('button', { class: 'btn ghost', type: 'button', onClick: () => exportCsv(r, key) }, 'خروجی CSV گزارش')
-      ]),
-      h('div', { class: 'kpis' },
-        kpi('مشتری در بازه', toFa(r.total)),
-        kpi('انجام‌شده', toFa(r.won)),
-        kpi('از دست رفته', toFa(r.lost)),
-        kpi('نرخ تبدیل', `${toFa(r.conversion)}٪`)),
-      h('div', { class: 'kpis' },
-        kpi('فاکتور صادرشده', toFa(r.invoiceCount)),
-        kpi('جمع فاکتورها', money(r.invoicedTotal)),
-        kpi('وصول‌شده', money(r.collected)),
-        kpi('مانده‌ی معوق', money(r.outstanding), r.overdueCount ? 'over' : '')),
-      h('div', { class: 'grid-2' },
-        bars('مشتری‌ها به تفکیک مرحله', r.byStage, r.total),
-        bars('منبع آشنایی', r.bySource, r.total)),
-      h('section', { class: 'card' },
-        h('h3', { text: 'پرمبلغ‌ترین مشتری‌ها' }),
-        r.top.length ? h('ol', { class: 'rank' }, r.top.map((t) => h('li', {}, h('span', { text: t.name }), h('strong', { text: money(t.amount) })))) : emptyState('هنوز مبلغی ثبت نشده است.')));
-  }
+  root.append(h('div', { class: 'kpi-row' },
+    kpi('کل مشتری‌ها', String(all.length)),
+    kpi('فروش موفق', money(wonAmount), 'tone-ok'),
+    kpi('در جریان', money(pipeline)),
+    kpi('مانده‌ی فاکتورها', money(due), overdue ? 'tone-danger' : '')));
 
-  refresh();
-  return { refresh };
-}
-
-function bars(title, items, total) {
-  const max = Math.max(1, ...items.map((i) => i.count));
-  return h('section', { class: 'card' },
-    h('h3', { text: title }),
-    h('ul', { class: 'bars' }, items.map((i) => h('li', {},
-      h('span', { class: 'bar-label', text: i.name }),
-      h('span', { class: 'bar' }, h('i', { style: `width:${Math.round((i.count / max) * 100)}%` })),
-      h('strong', { class: 'num', text: toFa(i.count) })))),
-    total ? null : h('p', { class: 'muted', text: 'داده‌ای در این بازه نیست.' }));
-}
-
-function exportCsv(r, key) {
-  const rows = [['شاخص', 'مقدار'],
-    ['مشتری در بازه', r.total], ['انجام‌شده', r.won], ['از دست رفته', r.lost], ['نرخ تبدیل ٪', r.conversion],
-    ['فاکتور صادرشده', r.invoiceCount], ['جمع فاکتورها (تومان)', r.invoicedTotal], ['وصول‌شده (تومان)', r.collected], ['مانده (تومان)', r.outstanding]];
-  downloadCsv(rows, `crm-${key}-report.csv`);
-  toast('گزارش CSV ساخته شد.');
+  root.append(h('h3', { class: 'section-title', text: 'مراحل فروش' }));
+  root.append(h('div', { class: 'table-wrap' }, h('table', { class: 'tbl' },
+    h('thead', {}, h('tr', {}, h('th', { text: 'مرحله' }), h('th', { text: 'تعداد' }), h('th', { text: 'مبلغ' }), h('th', { text: 'سهم' }))),
+    h('tbody', {}, ...cfg.stages.map((s, i) => h('tr', {},
+      h('td', { text: s.label }),
+      h('td', { class: 'num', text: String(counts[i].count) }),
+      h('td', { class: 'num', text: counts[i].amount ? money(counts[i].amount) : '—' }),
+      h('td', {}, h('span', { class: 'bar', style: { width: `${Math.round((counts[i].count / max) * 100)}%` } }))))))));
 }

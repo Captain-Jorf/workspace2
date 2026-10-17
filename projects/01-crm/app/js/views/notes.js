@@ -1,57 +1,60 @@
-// یادداشت‌ها: صفحه‌ی جدا برای یادداشت‌های داخلی؛ در فرم یا جزئیات مشتری نمایش داده نمی‌شوند.
-import { h, clear } from '../core/dom.js';
-import { jDateTime, toFa } from '../core/format.js';
+// یادداشت‌ها: صفحه‌ی مستقل. هر یادداشت می‌تواند به یک مشتری وصل باشد. ویرایش و حذف (با بازگردانی ۵ ثانیه‌ای).
+import { h } from '../core/dom.js';
+import { plural } from '../core/format.js';
+import { formatDateTime } from '../core/jalali.js';
+import { BUSINESSES } from '../config/businesses.js';
+import { can } from '../config/roles.js';
+import * as store from '../core/store.js';
 import * as notes from '../domain/notes.js';
-import { byId } from '../domain/customers.js';
+import * as cust from '../domain/customers.js';
+import { toast } from '../ui/toast.js';
+import { confirmDialog } from '../ui/dialog.js';
 import { openNoteForm } from '../features/noteForm.js';
-import { openCustomerDetail } from '../features/customerDetail.js';
-import { confirmDialog, toast } from '../ui/dialog.js';
-import { allowed, emptyState, pageHead } from './common.js';
+import { emptyState } from './parts.js';
+import { ctx } from '../ui/context.js';
+import { toEn } from '../core/format.js';
 
 export const meta = {
-  id: 'notes', title: 'یادداشت‌ها', label: 'یادداشت‌ها', icon: '✎', filters: false, search: true,
-  searchPlaceholder: 'جستجوی یادداشت‌ها (کلید /)'
+  label: 'یادداشت‌ها',
+  icon: '✎',
+  title: 'یادداشت‌ها',
+  sub: () => `${BUSINESSES[store.get().activeBiz].title} · یادداشت آزاد یا وصل به مشتری`,
+  chips: false,
+  actions: ['note']
 };
 
-export function mount(root, ctx) {
-  const wrap = h('div', { class: 'view notes' });
-  root.append(wrap);
+export function render(root, { refresh }) {
+  const key = store.get().activeBiz;
+  const role = store.get().session?.role;
+  const writable = can(role, 'note.write');
+  const q = toEn(ctx.query || '').trim().toLowerCase();
+  const rows = notes.list(key).filter((n) => !q || n.text.toLowerCase().includes(q));
 
-  function refresh() {
-    const items = notes.list({ query: ctx.query });
-    clear(wrap);
-    wrap.append(
-      pageHead('یادداشت‌ها', `${toFa(items.length)} یادداشت · فقط در این صفحه دیده می‌شوند`, [
-        allowed('note.manage') ? h('button', { class: 'btn primary', type: 'button', onClick: () => openNoteForm({ onDone: refresh }) }, 'یادداشت جدید') : null
-      ]),
-      items.length
-        ? h('div', { class: 'note-grid' }, items.map(card))
-        : emptyState(ctx.query ? 'یادداشتی با این عبارت پیدا نشد.' : 'هنوز یادداشتی نداری.', allowed('note.manage')
-          ? h('button', { class: 'btn primary', type: 'button', onClick: () => openNoteForm({}) }, 'یادداشت جدید') : null));
+  root.append(h('p', { class: 'muted small', text: `${plural(rows.length, 'یادداشت', 'یادداشت')}` }));
+  if (!rows.length) {
+    root.append(emptyState('یادداشتی نیست', 'با دکمه‌ی «یادداشت جدید» اولین یادداشت را بنویس.'));
+    return;
   }
-
-  function card(n) {
-    const linked = n.customerId ? byId(n.customerId) : null;
-    return h('article', { class: 'card note', dataset: { id: n.id } },
-      h('h3', { text: n.title }),
-      n.body ? h('p', { class: 'note-body', text: n.body }) : h('p', { class: 'muted', text: 'متنی ثبت نشده است.' }),
-      h('footer', { class: 'note-foot' },
-        linked
-          ? h('button', { class: 'link-btn sm', type: 'button', onClick: () => openCustomerDetail(linked.id) }, `مشتری: ${linked.name}`)
-          : h('span', { class: 'muted', text: 'بدون مشتری' }),
-        h('time', { class: 'muted', text: jDateTime(n.updatedAt) })),
-      allowed('note.manage') ? h('div', { class: 'card-actions' },
-        h('button', { class: 'btn ghost sm', type: 'button', onClick: () => openNoteForm({ note: n, onDone: refresh }) }, 'ویرایش'),
-        h('button', { class: 'btn danger-text sm', type: 'button', onClick: () => remove(n) }, 'حذف')) : null);
+  const list = h('div', { class: 'card-list' });
+  for (const n of rows) {
+    const c = n.customerId ? cust.byId(n.customerId, key) : null;
+    list.append(h('article', { class: 'kcard note-card' },
+      h('p', { class: 'note-text', text: n.text }),
+      h('div', { class: 'row-meta' },
+        h('span', { class: 'muted small', text: c ? `مشتری: ${c.name}` : 'یادداشت آزاد' }),
+        h('span', { class: 'muted small', text: formatDateTime(n.updatedAt) })),
+      writable ? h('div', { class: 'card-actions' },
+        h('button', { class: 'btn sm', type: 'button', onClick: () => openNoteForm({ note: n, onSaved: refresh }) }, 'ویرایش'),
+        h('button', { class: 'btn sm danger', type: 'button', onClick: () => confirmDialog({
+          title: 'حذف یادداشت', message: 'این یادداشت حذف شود؟ تا ۵ ثانیه می‌توانی بازگردانی.',
+          confirmLabel: 'حذف', danger: true,
+          onConfirm: () => {
+            const r = notes.removeNote(n.id, key);
+            if (!r.snapshot) return;
+            toast('یادداشت حذف شد', { actionLabel: 'بازگردانی', onAction: () => { notes.restoreNote(r.snapshot, key); refresh(); } });
+            refresh();
+          }
+        }) }, 'حذف')) : null));
   }
-
-  async function remove(n) {
-    const ok = await confirmDialog({ title: 'حذف یادداشت', message: `«${n.title}» حذف شود؟`, confirmLabel: 'حذف', danger: true });
-    if (!ok) return;
-    const snap = notes.remove(n.id);
-    if (snap) toast('یادداشت حذف شد.', { ms: 5000, action: { label: 'بازگردانی', run: () => notes.restore(snap) } });
-  }
-
-  refresh();
-  return { refresh };
+  root.append(list);
 }

@@ -1,243 +1,224 @@
-// منطق مشتری/اطلاعیه: ساخت، ویرایش، تغییر مرحله، فعالیت، بایگانی، حذف با امکان بازگردانی، ادغام و ایمپورت.
-import * as db from '../core/db.js';
-import { BUSINESSES, MONEY_FROM_STAGE, SOURCES } from '../config/businesses.js';
-import { DAY_MS, dayDiff, cleanPhone, isPhone } from '../core/format.js';
+// مشتری/سرنخ (یک موجودیت): قواعد مرحله، پیگیری، فعالیت، بایگانی و حذف با امکان بازگردانی.
+import * as store from '../core/store.js';
+import { BUSINESSES } from '../config/businesses.js';
+import { addDays, dayDiff, startOfDay, DAY } from '../core/jalali.js';
+import { phoneOk, normPhone, toEn } from '../core/format.js';
 
 export const FILTERS = [
   { id: 'all', label: 'همه' },
   { id: 'today', label: 'امروز' },
   { id: 'overdue', label: 'عقب‌افتاده' },
   { id: 'open', label: 'باز' },
-  { id: 'won', label: 'انجام‌شده‌ها' }
+  { id: 'done', label: 'انجام‌شده‌ها' }
 ];
 
-export const bizKey = () => db.activeBizKey();
+export const ACTIVITY_TYPES = [
+  { id: 'call', label: 'تماس' },
+  { id: 'message', label: 'پیام' },
+  { id: 'meeting', label: 'جلسه' },
+  { id: 'note', label: 'یادداشت' }
+];
+
+export const activityLabel = (id) => ACTIVITY_TYPES.find((t) => t.id === id)?.label || 'فعالیت';
+
+export const bizKey = () => store.get().activeBiz;
+export const bizConfig = (key = bizKey()) => BUSINESSES[key];
 export const stages = (key = bizKey()) => BUSINESSES[key].stages;
+export const stageOf = (c, key = bizKey()) => stages(key)[c.stage] || null;
+export const isClosed = (c, key = bizKey()) => {
+  const s = stageOf(c, key);
+  return !!(s && (s.won || s.lost));
+};
 
-export function stageFlags(idx, key = bizKey()) {
-  const biz = BUSINESSES[key];
-  const won = biz.won.includes(idx);
-  const lost = biz.lost.includes(idx);
-  return { won, lost, open: !won && !lost };
+export function bucket(key = bizKey()) {
+  return store.bucketOf(key);
 }
-
-export const needsAmount = (idx, key = bizKey()) => stageFlags(idx, key).won || idx >= MONEY_FROM_STAGE;
 
 export function list({ archived = false } = {}, key = bizKey()) {
-  return db.bucket(key).customers.filter((c) => !!c.archived === archived);
+  return bucket(key).customers.filter((c) => !!c.archived === archived);
 }
 
-export const byId = (id, key = bizKey()) => db.bucket(key).customers.find((c) => c.id === id) || null;
+export function byId(id, key = bizKey()) {
+  return bucket(key).customers.find((c) => c.id === id) || null;
+}
 
-export function matchesFilter(c, filter, key = bizKey(), now = Date.now()) {
-  const flags = stageFlags(c.stage, key);
+/** امروز = پیگیری امروز یا گذشته و هنوز باز */
+export function isDueToday(c, now = Date.now(), key = bizKey()) {
+  return c.followUpAt !== null && dayDiff(c.followUpAt, now) <= 0 && !isClosed(c, key);
+}
+
+export function matchesFilter(c, filter, now = Date.now(), key = bizKey()) {
   switch (filter) {
-    case 'today': return flags.open && dayDiff(c.next, now) <= 0;
-    case 'overdue': return flags.open && dayDiff(c.next, now) < 0;
-    case 'open': return flags.open;
-    case 'won': return flags.won;
+    case 'today': return isDueToday(c, now, key);
+    case 'overdue': return c.followUpAt !== null && dayDiff(c.followUpAt, now) < 0 && !isClosed(c, key);
+    case 'open': return !isClosed(c, key);
+    case 'done': return isClosed(c, key);
     default: return true;
   }
 }
 
 export function matchesQuery(c, query) {
-  const q = String(query || '').trim().toLowerCase();
+  const q = toEn(query || '').trim().toLowerCase();
   if (!q) return true;
-  return c.name.toLowerCase().includes(q) || c.phone.includes(cleanPhone(q));
+  const digits = q.replace(/\s/g, '');
+  return c.name.toLowerCase().includes(q)
+    || (c.contact || '').toLowerCase().includes(q)
+    || normPhone(c.phone).includes(digits);
 }
 
-/** مشتری‌های فعال که امروز یا عقب‌افتاده‌اند (برای صفحه‌ی امروز) */
-export function dueToday(now = Date.now(), key = bizKey()) {
-  return list({}, key).filter((c) => stageFlags(c.stage, key).open && dayDiff(c.next, now) <= 0)
-    .sort((a, b) => a.next - b.next);
+export function countsByStage(key = bizKey()) {
+  const counts = stages(key).map(() => ({ count: 0, amount: 0 }));
+  for (const c of list({}, key)) {
+    counts[c.stage].count += 1;
+    counts[c.stage].amount += c.amount || 0;
+  }
+  return counts;
 }
 
-function validateCore(data, key) {
-  if (!data.name || String(data.name).trim().length < 2) return 'نام را حداقل ۲ حرف وارد کن.';
-  if (!isPhone(data.phone)) return 'شماره موبایل باید ۱۱ رقم و با 09 شروع شود.';
-  if (!stages(key)[data.stage]) return 'مرحله‌ی معتبر انتخاب کن.';
-  if (needsAmount(data.stage, key) && !(data.amount > 0)) return 'برای این مرحله مبلغ الزامی است.';
-  return '';
+/** اعتبارسنجی مشترک فرم مشتری و تغییر مرحله */
+export function validateCustomer(data, key = bizKey()) {
+  const errors = {};
+  if (!data.name || !String(data.name).trim()) errors.name = 'نام الزامی است';
+  if (!phoneOk(data.phone)) errors.phone = 'شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود';
+  if (!data.source) errors.source = 'منبع آشنایی را انتخاب کن';
+  const st = stages(key)[Number(data.stage)];
+  if (!st) errors.stage = 'مرحله‌ی نامعتبر است';
+  else if (st.amount && !(Number(data.amount) > 0)) errors.amount = 'برای این مرحله، مبلغ الزامی است';
+  return errors;
 }
 
-export function createCustomer(data, key = bizKey()) {
-  const error = validateCore(data, key);
-  if (error) return { error };
-  const now = Date.now();
-  const b = db.bucket(key);
-  const customer = {
-    id: db.nextId('nextId', key),
+export function createCustomer(data, key = bizKey(), now = Date.now()) {
+  const errors = validateCustomer(data, key);
+  if (Object.keys(errors).length) return { errors };
+  const cfg = BUSINESSES[key];
+  const fields = {};
+  for (const f of cfg.fields) fields[f.key] = String(data.fields?.[f.key] ?? '').trim();
+  const c = {
+    id: store.nextSeq('customer', key),
     name: String(data.name).trim(),
-    phone: cleanPhone(data.phone),
-    source: data.source || SOURCES[0],
-    stage: data.stage,
-    stageSince: now,
-    amount: Number(data.amount) || 0,
-    next: now + (data.follow || 2) * DAY_MS,
+    contact: String(data.contact || '').trim(),
+    phone: normPhone(data.phone),
+    source: data.source,
+    stage: Number(data.stage),
+    amount: stages(key)[Number(data.stage)].amount ? Math.round(Number(data.amount)) : 0,
+    followUpAt: data.followUpAt ?? null,
     createdAt: now,
+    updatedAt: now,
     archived: false,
-    notes: String(data.notes || '').trim(),
-    extra: { ...(data.extra || {}) },
-    log: [{ at: now, type: 'created', text: 'ثبت شد' }]
+    fields,
+    description: '',
+    activities: []
   };
-  b.customers.push(customer);
-  db.touch();
-  return { customer };
-}
-
-export function updateCustomer(id, data, key = bizKey()) {
-  const c = byId(id, key);
-  if (!c) return { error: 'مشتری پیدا نشد.' };
-  const merged = { ...c, ...data, phone: data.phone ?? c.phone };
-  const error = validateCore({ ...merged, phone: merged.phone }, key);
-  if (error) return { error };
-  const changes = [];
-  if (merged.name !== c.name) changes.push('نام');
-  if (merged.phone !== c.phone) changes.push('موبایل');
-  if (merged.amount !== c.amount) changes.push('مبلغ');
-  if (merged.source !== c.source) changes.push('منبع');
-  c.name = String(merged.name).trim();
-  c.phone = cleanPhone(merged.phone);
-  c.source = merged.source;
-  c.amount = Number(merged.amount) || 0;
-  c.notes = String(merged.notes || '').trim();
-  c.extra = { ...(merged.extra || {}) };
-  if (merged.stage !== c.stage) {
-    const from = stages(key)[c.stage];
-    c.stage = merged.stage;
-    c.stageSince = Date.now();
-    c.log.push({ at: c.stageSince, type: 'stage', text: `مرحله: ${from} ← ${stages(key)[c.stage]}` });
-  }
-  if (data.follow) c.next = Date.now() + data.follow * DAY_MS;
-  if (changes.length) c.log.push({ at: Date.now(), type: 'edit', text: `ویرایش: ${changes.join('، ')}` });
-  db.touch();
+  bucket(key).customers.push(c);
+  store.commit();
   return { customer: c };
 }
 
-export function moveStage(id, stage, { silent = false } = {}, key = bizKey()) {
+export function updateCustomer(id, data, key = bizKey(), now = Date.now()) {
   const c = byId(id, key);
-  if (!c) return { error: 'مشتری پیدا نشد.' };
-  if (c.stage === stage) return { customer: c };
-  if (needsAmount(stage, key) && !(c.amount > 0)) {
-    return { error: `«${c.name}» مبلغ ندارد؛ برای این مرحله ابتدا مبلغ را ثبت کن.` };
-  }
-  const from = stages(key)[c.stage];
-  c.stage = stage;
-  c.stageSince = Date.now();
-  c.log.push({ at: c.stageSince, type: 'stage', text: `مرحله: ${from} ← ${stages(key)[stage]}` });
-  if (!silent) db.touch();
+  if (!c) return { error: 'مشتری پیدا نشد' };
+  const errors = validateCustomer(data, key);
+  if (Object.keys(errors).length) return { errors };
+  const cfg = BUSINESSES[key];
+  c.name = String(data.name).trim();
+  c.contact = String(data.contact || '').trim();
+  c.phone = normPhone(data.phone);
+  c.source = data.source;
+  c.stage = Number(data.stage);
+  c.amount = stages(key)[c.stage].amount ? Math.round(Number(data.amount)) : 0;
+  if (data.followUpAt !== undefined) c.followUpAt = data.followUpAt;
+  for (const f of cfg.fields) c.fields[f.key] = String(data.fields?.[f.key] ?? '').trim();
+  c.updatedAt = now;
+  store.commit();
   return { customer: c };
 }
 
-export function logActivity(id, { type, text, follow }, key = bizKey()) {
+/** تغییر مرحله؛ اگر مرحله مبلغ بخواهد و مبلغی نباشد، خطا برمی‌گرداند */
+export function moveStage(id, stage, key = bizKey(), now = Date.now()) {
   const c = byId(id, key);
-  if (!c) return { error: 'مشتری پیدا نشد.' };
-  const now = Date.now();
-  c.log.push({ at: now, type, text: String(text || '').trim() || activityLabel(type) });
-  if (follow) c.next = now + follow * DAY_MS;
-  db.touch();
+  if (!c) return { error: 'مشتری پیدا نشد' };
+  const st = stages(key)[Number(stage)];
+  if (!st) return { error: 'مرحله‌ی نامعتبر است' };
+  if (st.amount && !(c.amount > 0)) return { error: 'برای این مرحله ابتدا مبلغ را ثبت کن' };
+  c.stage = Number(stage);
+  c.updatedAt = now;
+  store.commit();
   return { customer: c };
 }
 
-/** پیگیری بعدی را به‌اندازه‌ی چند روز به تعویق می‌اندازد */
-export function snooze(id, days = 3, key = bizKey()) {
+export function logActivity(id, { type = 'call', text = '', follow }, key = bizKey(), now = Date.now()) {
   const c = byId(id, key);
-  if (!c) return { error: 'مشتری پیدا نشد.' };
-  c.next = Date.now() + days * DAY_MS;
-  c.log.push({ at: Date.now(), type: 'edit', text: `پیگیری ${days} روز به تعویق افتاد` });
-  db.touch();
+  if (!c) return { error: 'مشتری پیدا نشد' };
+  c.activities.unshift({
+    id: store.nextSeq('activity', key),
+    type,
+    text: String(text || '').trim() || activityLabel(type),
+    at: now,
+    follow: follow ?? null
+  });
+  if (follow !== undefined) c.followUpAt = follow;
+  c.updatedAt = now;
+  store.commit();
   return { customer: c };
 }
 
-export const ACTIVITY_TYPES = [
-  { value: 'call', label: 'تماس' },
-  { value: 'message', label: 'پیام' },
-  { value: 'meeting', label: 'جلسه' },
-  { value: 'email', label: 'ایمیل' }
-];
-
-export function activityLabel(type) {
-  return ACTIVITY_TYPES.find((t) => t.value === type)?.label || 'فعالیت';
+/** «۳ روز بعد» و سایر به‌تعویق‌اندازی‌ها: از امروز شروع می‌شود */
+export function snooze(id, days = 3, key = bizKey(), now = Date.now()) {
+  const c = byId(id, key);
+  if (!c) return { error: 'مشتری پیدا نشد' };
+  c.followUpAt = addDays(now, days);
+  c.updatedAt = now;
+  store.commit();
+  return { customer: c };
 }
 
-export function setArchived(id, archived, key = bizKey()) {
+export function setDescription(id, text, key = bizKey(), now = Date.now()) {
   const c = byId(id, key);
-  if (!c) return { error: 'مشتری پیدا نشد.' };
+  if (!c) return { error: 'مشتری پیدا نشد' };
+  c.description = String(text || '').trim();
+  c.updatedAt = now;
+  store.commit();
+  return { customer: c };
+}
+
+export function setArchived(id, archived, key = bizKey(), now = Date.now()) {
+  const c = byId(id, key);
+  if (!c) return { error: 'مشتری پیدا نشد' };
   c.archived = !!archived;
-  c.log.push({ at: Date.now(), type: 'edit', text: archived ? 'بایگانی شد' : 'از بایگانی برگشت' });
-  db.touch();
+  c.updatedAt = now;
+  store.commit();
   return { customer: c };
 }
 
-/** حذف با نسخه‌ی پشتیبان تا بتوان با «بازگردانی» برگرداند */
+/** حذف با امکان بازگردانی: برمی‌گرداند snapshot برای بازگردانی */
 export function removeCustomer(id, key = bizKey()) {
-  const b = db.bucket(key);
-  const idx = b.customers.findIndex((c) => c.id === id);
-  if (idx < 0) return null;
-  const [customer] = b.customers.splice(idx, 1);
-  const invoices = b.invoices.filter((i) => i.customerId === id);
-  b.invoices = b.invoices.filter((i) => i.customerId !== id);
-  const noteIds = b.notes.filter((n) => n.customerId === id).map((n) => n.id);
-  b.notes.forEach((n) => { if (n.customerId === id) n.customerId = null; });
-  db.touch();
-  return { customer, index: idx, invoices, noteIds };
+  const list_ = bucket(key).customers;
+  const index = list_.findIndex((c) => c.id === id);
+  if (index < 0) return { error: 'مشتری پیدا نشد' };
+  const [customer] = list_.splice(index, 1);
+  const invoices = bucket(key).invoices.filter((inv) => inv.customerId === id);
+  bucket(key).invoices = bucket(key).invoices.filter((inv) => inv.customerId !== id);
+  store.commit();
+  return { snapshot: { customer, index, invoices } };
 }
 
 export function restoreCustomer(snapshot, key = bizKey()) {
-  if (!snapshot) return;
-  const b = db.bucket(key);
-  b.customers.splice(Math.min(snapshot.index, b.customers.length), 0, snapshot.customer);
-  b.invoices.push(...snapshot.invoices);
-  b.notes.forEach((n) => { if (snapshot.noteIds.includes(n.id)) n.customerId = snapshot.customer.id; });
-  db.touch();
+  const b = bucket(key);
+  if (!b.customers.some((c) => c.id === snapshot.customer.id)) {
+    b.customers.splice(Math.min(snapshot.index, b.customers.length), 0, snapshot.customer);
+    b.invoices.push(...snapshot.invoices);
+    store.commit();
+  }
+  return { customer: snapshot.customer };
 }
 
-/** گروه‌های مشتری با شماره‌ی تکراری */
-export function duplicateGroups(key = bizKey()) {
-  const map = new Map();
-  list({}, key).concat(list({ archived: true }, key)).forEach((c) => {
-    if (!map.has(c.phone)) map.set(c.phone, []);
-    map.get(c.phone).push(c);
-  });
-  return [...map.values()].filter((g) => g.length > 1);
+export function dueSoonLabel(c, now = Date.now()) {
+  if (c.followUpAt === null) return { tone: 'none', text: 'بدون پیگیری' };
+  const d = dayDiff(c.followUpAt, now);
+  if (d < 0) return { tone: 'danger', text: `عقب‌افتاده ${Math.abs(d)} روز` };
+  if (d === 0) return { tone: 'today', text: 'امروز' };
+  return { tone: 'ok', text: `${d} روز دیگر` };
 }
 
-/** ادغام: قدیمی‌ترین رکورد می‌ماند؛ فاکتورها، یادداشت‌ها و سابقه منتقل می‌شوند */
-export function mergeDuplicates(key = bizKey()) {
-  const b = db.bucket(key);
-  const groups = duplicateGroups(key);
-  groups.forEach((group) => {
-    const sorted = [...group].sort((a, c) => a.createdAt - c.createdAt);
-    const keep = sorted[0];
-    const others = sorted.slice(1);
-    others.forEach((o) => {
-      b.invoices.forEach((i) => { if (i.customerId === o.id) { i.customerId = keep.id; i.custName = keep.name; } });
-      b.notes.forEach((n) => { if (n.customerId === o.id) n.customerId = keep.id; });
-      keep.log.push(...o.log, { at: Date.now(), type: 'edit', text: `ادغام با رکورد ${o.id}` });
-      keep.amount = Math.max(keep.amount, o.amount);
-    });
-    keep.log.sort((x, y) => x.at - y.at);
-    b.customers = b.customers.filter((c) => !others.includes(c));
-  });
-  if (groups.length) db.touch();
-  return groups.length;
-}
-
-/** ایمپورت ردیف‌های CSV؛ شماره‌ی تکراری رد می‌شود */
-export function importRows(rows, key = bizKey()) {
-  const b = db.bucket(key);
-  const seen = new Set(b.customers.map((c) => c.phone));
-  let added = 0, skipped = 0, invalid = 0;
-  rows.forEach((row) => {
-    const phone = cleanPhone(row.phone);
-    if (!isPhone(phone) || !row.name || String(row.name).trim().length < 2) { invalid++; return; }
-    if (seen.has(phone)) { skipped++; return; }
-    let stage = Number.isInteger(row.stage) ? row.stage : 0;
-    if (!stages(key)[stage]) stage = 0;
-    const amount = needsAmount(stage, key) ? Number(row.amount) || 0 : 0;
-    if (needsAmount(stage, key) && !amount) stage = 0;
-    const result = createCustomer({ name: row.name, phone, source: row.source || SOURCES[0], stage, amount, follow: 2 }, key);
-    if (result.customer) { seen.add(phone); added++; } else invalid++;
-  });
-  return { added, skipped, invalid };
-}
+export const dayStart = startOfDay;
+export const DAY_MS = DAY;

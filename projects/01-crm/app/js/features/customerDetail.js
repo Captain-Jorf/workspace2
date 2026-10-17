@@ -1,104 +1,179 @@
-// جزئیات مشتری: اطلاعات کامل، توضیحات، گزارش‌های مرتبط، سابقه و اقدام‌ها.
-import * as db from '../core/db.js';
+// پنجره‌ی جزئیات مشتری: اطلاعات کامل، گزارش‌های مرتبط (فعالیت و فاکتور)، توضیحات، و اقدام‌های سریع.
+import * as store from '../core/store.js';
 import { h } from '../core/dom.js';
-import { money, jDateTime, followUpLabel, dayDiff, toFa } from '../core/format.js';
+import { money } from '../core/format.js';
+import { formatDate, formatDateTime } from '../core/jalali.js';
 import { BUSINESSES } from '../config/businesses.js';
-import { can } from '../core/permissions.js';
-import * as auth from '../domain/auth.js';
-import { byId, stageFlags, setArchived, removeCustomer, restoreCustomer, activityLabel, snooze } from '../domain/customers.js';
-import { forCustomer, paidTotal, remaining, statusOf, STATUS_LABEL } from '../domain/invoices.js';
-import { openDialog, closeDialog, confirmDialog, toast } from '../ui/dialog.js';
-import { openCustomerForm } from './customerForm.js';
-import { openActivity } from './activity.js';
+import { can } from '../config/roles.js';
+import * as cust from '../domain/customers.js';
+import * as inv from '../domain/invoices.js';
+import { openDialog, confirmDialog } from '../ui/dialog.js';
+import { toast } from '../ui/toast.js';
+import { field, select, applyErrors, bindCtrlEnter } from './forms.js';
+import { openCustomerForm, FOLLOW_OPTIONS, followUpFrom } from './customerForm.js';
 import { openInvoiceForm } from './invoiceForm.js';
-import { displayExtra } from './extraFields.js';
 
-const section = (title, ...children) => h('section', { class: 'dsec' }, h('h3', { text: title }), ...children);
-const row = (label, value) => h('div', { class: 'kv' }, h('span', { class: 'k', text: label }), h('span', { class: 'v' }, value));
+const role = () => store.get().session?.role;
 
-export function openCustomerDetail(id, { onChange = () => {} } = {}) {
-  const key = db.activeBizKey();
-  const biz = BUSINESSES[key];
-  const c = byId(id, key);
-  if (!c) { toast('این مشتری پیدا نشد.'); return; }
-  const role = auth.session()?.role;
-  const flags = stageFlags(c.stage, key);
-  const invs = forCustomer(c.id, key);
-  const active = invs.filter((i) => !i.draft);
-  const outstanding = active.reduce((s, i) => s + remaining(i), 0);
-  const collected = invs.reduce((s, i) => s + paidTotal(i), 0);
-  const follow = followUpLabel(c.next);
-  const reopen = () => { onChange(); openCustomerDetail(id, { onChange }); };
-
-  const kpis = h('div', { class: 'kpis small' },
-    kpi('مبلغ', money(c.amount)),
-    kpi('مرحله', biz.stages[c.stage]),
-    kpi('پیگیری بعدی', follow.text, follow.tone),
-    kpi('مانده‌ی فاکتور', money(outstanding)));
-
-  const basic = section('اطلاعات',
-    row('موبایل', c.phone),
-    row('منبع آشنایی', c.source),
-    row('ثبت', jDateTime(c.createdAt)),
-    row('آخرین تغییر مرحله', jDateTime(c.stageSince)),
-    ...biz.fields.map((f) => row(f.l, displayExtra(f, c.extra?.[f.k]))));
-
-  const notesBlock = section('توضیحات',
-    c.notes ? h('p', { class: 'longtext' }, c.notes) : h('p', { class: 'muted' }, 'توضیحاتی ثبت نشده است.'));
-
-  const invoiceRows = invs.length
-    ? h('table', { class: 'tbl compact' },
-      h('thead', {}, h('tr', {}, h('th', { text: 'شماره' }), h('th', { text: 'تاریخ' }), h('th', { text: 'مبلغ' }), h('th', { text: 'وضعیت' }))),
-      h('tbody', {}, invs.map((i) => h('tr', {},
-        h('td', { class: 'num' }, toFa(i.code)),
-        h('td', {}, jDateTime(i.issued)),
-        h('td', { class: 'num' }, money(i.amount)),
-        h('td', {}, STATUS_LABEL[statusOf(i)])))))
-    : h('p', { class: 'muted' }, 'هنوز فاکتوری برای این مشتری صادر نشده است.');
-
-  const reports = section('گزارش‌های مرتبط',
-    row('روز از ثبت', toFa(Math.max(0, -dayDiff(c.createdAt)))),
-    row('روز در مرحله‌ی فعلی', toFa(Math.max(0, -dayDiff(c.stageSince)))),
-    row('تعداد فعالیت‌ها', toFa(c.log.filter((l) => ['call', 'message', 'meeting', 'email'].includes(l.type)).length)),
-    row('فاکتورهای صادرشده', toFa(active.length)),
-    row('مجموع پرداخت‌شده', money(collected)),
-    invoiceRows);
-
-  const history = section('سابقه',
-    h('ul', { class: 'timeline' }, [...c.log].sort((a, b) => b.at - a.at).slice(0, 25).map((l) =>
-      h('li', {}, h('time', { text: jDateTime(l.at) }), h('span', { text: l.type === 'call' || l.type === 'message' || l.type === 'meeting' || l.type === 'email' ? `${activityLabel(l.type)}: ${l.text}` : l.text })))));
-
-  const danger = can(role, 'customer.delete')
-    ? h('div', { class: 'danger-zone' },
-      h('span', { class: 'muted' }, 'حذف دائمی را فقط مدیر می‌تواند انجام دهد.'),
-      h('button', { class: 'btn danger', type: 'button', onClick: () => deleteCustomer() }, 'حذف مشتری'))
-    : null;
-
-  const body = h('div', { class: 'detail' },
-    h('header', { class: 'detail-head' },
-      h('div', {}, h('h3', { text: c.name }), h('p', { class: 'sub', text: `${biz.stages[c.stage]} · ${c.phone}` })),
-      flags.open && can(role, 'customer.activity')
-        ? h('button', { class: 'btn ghost sm', type: 'button', onClick: () => { const r = snooze(c.id, 3); if (!r.error) { toast('پیگیری ۳ روز بعد تنظیم شد.'); reopen(); } } }, 'پیگیری ۳ روز بعد')
-        : null),
-    kpis, basic, notesBlock, reports, history, danger);
-
-  const actions = [];
-  if (can(role, 'customer.activity')) actions.push({ label: 'ثبت فعالیت', variant: 'primary', primary: true, onClick: () => openActivity(c.id, reopen) });
-  if (can(role, 'invoice.create')) actions.push({ label: 'فاکتور جدید', variant: '', onClick: () => openInvoiceForm({ customerId: c.id, onDone: reopen }) });
-  if (can(role, 'customer.edit')) actions.push({ label: 'ویرایش', variant: '', onClick: () => openCustomerForm({ customer: c, onSaved: () => onChange() }) });
-  if (can(role, 'customer.archive')) actions.push({ label: 'بایگانی', variant: 'ghost', onClick: () => { setArchived(c.id, true); toast('به بایگانی رفت.'); onChange(); closeDialog(); } });
-
-  openDialog({ kind: 'drawer', title: 'جزئیات مشتری', sub: biz.title, body, actions: actions.reverse() });
-
-  async function deleteCustomer() {
-    const ok = await confirmDialog({ title: 'حذف مشتری', message: `«${c.name}» و فاکتورهایش حذف شود؟`, confirmLabel: 'حذف مشتری', danger: true });
-    if (!ok) return;
-    const snap = removeCustomer(c.id, key);
-    closeDialog();
-    onChange();
-    if (snap) toast('مشتری حذف شد.', { ms: 5000, action: { label: 'بازگردانی', run: () => { restoreCustomer(snap, key); onChange(); } } });
-  }
+export function openActivityForm({ customerId, type = 'call', onSaved = () => {} }) {
+  const key = store.get().activeBiz;
+  const typeSel = select(cust.ACTIVITY_TYPES.map((t) => ({ value: t.id, label: t.label })), type);
+  const text = h('textarea', { class: 'input', rows: '3', placeholder: 'چه گفته شد؟ (اختیاری)' });
+  const follow = select(FOLLOW_OPTIONS, '2');
+  const body = h('div', { class: 'form-grid' },
+    field('نوع فعالیت', typeSel, { key: 'type' }),
+    field('پیگیری بعدی', follow, { key: 'follow' }),
+    field('یادداشت فعالیت', text, { key: 'text', wide: true }));
+  const submit = (close) => {
+    const r = cust.logActivity(customerId, { type: typeSel.value, text: text.value, follow: followUpFrom(follow.value) }, key);
+    if (r.error) {
+      applyErrors(body, { text: r.error });
+      return;
+    }
+    close();
+    toast('فعالیت ثبت شد');
+    onSaved(r.customer);
+  };
+  const handle = openDialog({
+    kind: 'modal', size: 'small', title: 'ثبت فعالیت', sub: 'Ctrl+Enter برای ذخیره',
+    body,
+    actions: [
+      { label: 'انصراف', variant: 'ghost', onClick: (close) => close() },
+      { label: 'ثبت فعالیت', variant: 'primary', onClick: (close) => submit(close) }
+    ]
+  });
+  bindCtrlEnter(handle.panel, () => submit(handle.close));
+  return handle;
 }
 
-const kpi = (label, value, tone = '') => h('div', { class: `kpi-mini ${tone}`.trim() },
-  h('span', { class: 'k', text: label }), h('strong', { class: 'v', text: value }));
+/** openCustomerDetail(id, { onChange }) */
+export function openCustomerDetail(id, { onChange = () => {} } = {}) {
+  const key = store.get().activeBiz;
+  const cfg = BUSINESSES[key];
+  let handle = null;
+
+  const reopen = () => {
+    if (handle) handle.close();
+    openCustomerDetail(id, { onChange });
+  };
+
+  const c = cust.byId(id, key);
+  if (!c) return null;
+  const canWrite = can(role(), 'customer.write');
+  const invoices = inv.forCustomer(id, key);
+  const due = invoices.reduce((s, i) => s + inv.totals(i).due, 0);
+  const follow = cust.dueSoonLabel(c);
+
+  const stageSel = select(cfg.stages.map((s, i) => ({ value: String(i), label: s.label })), String(c.stage));
+  stageSel.disabled = !canWrite;
+  stageSel.addEventListener('change', () => {
+    const r = cust.moveStage(id, stageSel.value, key);
+    if (r.error) {
+      toast(r.error, { tone: 'warn' });
+      stageSel.value = String(c.stage);
+      return;
+    }
+    toast('مرحله تغییر کرد');
+    onChange();
+    reopen();
+  });
+
+  const summary = h('div', { class: 'summary' },
+    summaryItem('مرحله', h('div', { class: 'stage-row' }, stageSel)),
+    summaryItem('مبلغ', c.amount ? money(c.amount) : '—'),
+    summaryItem('پیگیری بعدی', h('span', { class: `follow ${follow.tone}`, text: `${follow.text}${c.followUpAt !== null ? ` · ${formatDate(c.followUpAt)}` : ''}` })),
+    summaryItem('مانده‌ی فاکتور', due ? money(due) : 'تسویه'));
+
+  const actions = h('div', { class: 'row-actions' },
+    canWrite ? h('button', { class: 'btn primary', type: 'button', onClick: () => openActivityForm({ customerId: id, onSaved: reopen }) }, 'ثبت فعالیت') : null,
+    canWrite ? h('button', { class: 'btn', type: 'button', onClick: () => openActivityForm({ customerId: id, type: 'call', onSaved: reopen }) }, 'تماس') : null,
+    canWrite ? h('button', { class: 'btn', type: 'button', onClick: () => {
+      cust.snooze(id, 3, key);
+      toast('پیگیری به ۳ روز بعد منتقل شد');
+      reopen();
+    } }, '۳ روز بعد') : null,
+    canWrite ? h('button', { class: 'btn', type: 'button', onClick: () => openInvoiceForm({ customerId: id, onSaved: reopen }) }, 'فاکتور جدید') : null,
+    canWrite ? h('button', { class: 'btn ghost', type: 'button', onClick: () => openCustomerForm({ customer: c, onSaved: () => { onChange(); reopen(); } }) }, 'ویرایش') : null,
+    canWrite ? h('button', { class: 'btn ghost', type: 'button', onClick: () => {
+      cust.setArchived(id, true, key);
+      toast('به بایگانی منتقل شد');
+      handle.close();
+      onChange();
+    } }, 'بایگانی') : null,
+    canWrite ? h('button', { class: 'btn danger', type: 'button', onClick: () => {
+      confirmDialog({
+        title: 'حذف مشتری',
+        message: `«${c.name}» حذف شود؟ می‌توانی تا ۵ ثانیه بازش گردانی.`,
+        confirmLabel: 'حذف مشتری',
+        danger: true,
+        onConfirm: () => {
+          const r = cust.removeCustomer(id, key);
+          if (r.snapshot) {
+            toast('مشتری حذف شد', { actionLabel: 'بازگردانی', onAction: () => { cust.restoreCustomer(r.snapshot, key); onChange(); } });
+          }
+          handle.close();
+          onChange();
+        }
+      });
+    } }, 'حذف') : null);
+
+  const info = h('dl', { class: 'kv' },
+    kv('موبایل', c.phone, 'ltr'),
+    c.contact ? kv(cfg.nameStyle === 'company' ? 'مسئول' : 'تماس‌گیرنده', c.contact) : null,
+    kv('منبع آشنایی', c.source),
+    kv('ثبت', formatDateTime(c.createdAt)),
+    kv('آخرین تغییر', formatDateTime(c.updatedAt)),
+    ...cfg.fields.map((f) => kv(f.label, displayField(f, c.fields[f.key]))));
+
+  const reports = h('div', { class: 'report-list' },
+    c.activities.length
+      ? c.activities.slice(0, 8).map((a) => h('div', { class: 'report-row' },
+        h('span', { class: 'pill-soft', text: cust.activityLabel(a.type) }),
+        h('span', { class: 'grow', text: a.text }),
+        h('span', { class: 'muted small', text: formatDate(a.at) })))
+      : h('p', { class: 'muted', text: 'هنوز فعالیتی ثبت نشده است.' }),
+    invoices.length
+      ? invoices.map((i) => h('div', { class: 'report-row' },
+        h('span', { class: 'pill-soft', text: 'فاکتور' }),
+        h('span', { class: 'grow ltr', text: i.no }),
+        h('span', { class: 'muted small', text: money(inv.totals(i).total) }),
+        h('span', { class: `status ${inv.invoiceStatus(i)}`, text: inv.STATUS_LABEL[inv.invoiceStatus(i)] })))
+      : null);
+
+  const descArea = h('textarea', { class: 'input', rows: '4', placeholder: 'توضیحات درباره‌ی این مشتری…', disabled: !canWrite }, c.description || '');
+  const saveDesc = canWrite ? h('button', { class: 'btn', type: 'button', onClick: () => {
+    cust.setDescription(id, descArea.value, key);
+    toast('توضیحات ذخیره شد');
+    onChange();
+  } }, 'ذخیره‌ی توضیحات') : null;
+
+  const body = h('div', { class: 'detail' },
+    summary,
+    actions,
+    h('section', { class: 'dsec' }, h('h3', { text: 'اطلاعات' }), info),
+    h('section', { class: 'dsec' }, h('h3', { text: 'گزارش‌های مرتبط' }), reports),
+    h('section', { class: 'dsec' }, h('h3', { text: 'توضیحات' }), descArea, saveDesc));
+
+  handle = openDialog({
+    kind: 'drawer',
+    title: c.name,
+    sub: `${c.phone} · ${c.source}`,
+    body,
+    actions: [{ label: 'بستن', variant: 'ghost', onClick: (close) => close() }]
+  });
+  return handle;
+}
+
+function summaryItem(label, value) {
+  return h('div', { class: 'summary-item' }, h('span', { class: 'muted small', text: label }), typeof value === 'string' ? h('strong', { text: value }) : value);
+}
+
+function kv(label, value, dir = '') {
+  return h('div', { class: 'kv-row' }, h('dt', { text: label }), h('dd', { class: dir, text: value }));
+}
+
+function displayField(f, value) {
+  if (!value) return '—';
+  if (f.kind === 'money') return money(value);
+  return value;
+}

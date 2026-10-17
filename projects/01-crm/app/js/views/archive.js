@@ -1,49 +1,45 @@
-// بایگانی: مشتری‌های بایگانی‌شده؛ بازگردانی برای همه، حذف دائمی فقط برای مدیر.
-import { h, clear } from '../core/dom.js';
-import { followUpLabel, toFa } from '../core/format.js';
-import * as db from '../core/db.js';
+// بایگانی: مشتری‌های بایگانی‌شده. بازگردانی برای همه؛ حذف دائمی فقط برای مدیر.
+import { h } from '../core/dom.js';
+import { plural } from '../core/format.js';
 import { BUSINESSES } from '../config/businesses.js';
-import { list, matchesQuery, setArchived, removeCustomer, restoreCustomer } from '../domain/customers.js';
-import { openCustomerDetail } from '../features/customerDetail.js';
-import { confirmDialog, toast } from '../ui/dialog.js';
-import { allowed, emptyState, pageHead } from './common.js';
+import { can } from '../config/roles.js';
+import * as store from '../core/store.js';
+import * as cust from '../domain/customers.js';
+import { toast } from '../ui/toast.js';
+import { confirmDialog } from '../ui/dialog.js';
+import { emptyState, stageChip } from './parts.js';
+import { ctx } from '../ui/context.js';
 
 export const meta = {
-  id: 'archive', title: 'بایگانی', label: 'بایگانی', icon: '▣', filters: false, search: true,
-  searchPlaceholder: 'جستجو در بایگانی (کلید /)'
+  label: 'بایگانی',
+  icon: '▣',
+  title: 'بایگانی',
+  sub: () => `${BUSINESSES[store.get().activeBiz].title} · مشتری‌های بایگانی‌شده`,
+  chips: false,
+  actions: []
 };
 
-export function mount(root, ctx) {
-  const wrap = h('div', { class: 'view archive' });
-  root.append(wrap);
-
-  function refresh() {
-    const key = db.activeBizKey();
-    const items = list({ archived: true }).filter((c) => matchesQuery(c, ctx.query));
-    clear(wrap);
-    wrap.append(
-      pageHead('بایگانی', `${toFa(items.length)} مورد بایگانی‌شده؛ با بازگردانی دوباره در فهرست‌ها دیده می‌شوند.`),
-      items.length
-        ? h('div', { class: 'table-wrap' }, h('table', { class: 'tbl' },
-          h('thead', {}, h('tr', {}, ['نام', 'موبایل', 'مرحله', 'پیگیری قبلی', 'عملیات'].map((t) => h('th', { text: t })))),
-          h('tbody', {}, items.map((c) => h('tr', { dataset: { id: c.id } },
-            h('td', {}, h('button', { class: 'link-btn', type: 'button', onClick: () => openCustomerDetail(c.id) }, c.name)),
-            h('td', { class: 'num' }, c.phone),
-            h('td', {}, BUSINESSES[key].stages[c.stage]),
-            h('td', {}, h('span', { class: `follow ${followUpLabel(c.next).tone}`, text: followUpLabel(c.next).text })),
-            h('td', { class: 'actions' },
-              allowed('customer.archive') ? h('button', { class: 'btn ghost sm', type: 'button', onClick: () => { setArchived(c.id, false); toast(`«${c.name}» از بایگانی برگشت.`); } }, 'بازگردانی') : null,
-              allowed('customer.delete') ? h('button', { class: 'btn danger-text sm', type: 'button', onClick: () => purge(c) }, 'حذف دائمی') : null)))))) 
-        : emptyState(ctx.query ? 'موردی با این عبارت در بایگانی نیست.' : 'بایگانی خالی است.'));
+export function render(root, { refresh }) {
+  const key = store.get().activeBiz;
+  const role = store.get().session?.role;
+  const rows = cust.list({ archived: true }, key).filter((c) => cust.matchesQuery(c, ctx.query));
+  root.append(h('p', { class: 'muted small', text: plural(rows.length, 'مورد', 'مورد') + ' بایگانی‌شده' }));
+  if (!rows.length) {
+    root.append(emptyState('بایگانی خالی است', 'مشتری‌هایی که بایگانی کنی اینجا می‌آیند و می‌توانی برگردانی.'));
+    return;
   }
-
-  async function purge(c) {
-    const ok = await confirmDialog({ title: 'حذف دائمی', message: `«${c.name}» و فاکتورهایش حذف شود؟`, confirmLabel: 'حذف دائمی', danger: true });
-    if (!ok) return;
-    const snap = removeCustomer(c.id);
-    if (snap) toast('مشتری حذف شد.', { ms: 5000, action: { label: 'بازگردانی', run: () => restoreCustomer(snap) } });
-  }
-
-  refresh();
-  return { refresh };
+  const table = h('table', { class: 'tbl' },
+    h('thead', {}, h('tr', {}, h('th', { text: 'نام' }), h('th', { text: 'موبایل' }), h('th', { text: 'مرحله' }), h('th', { text: 'عملیات' }))),
+    h('tbody', {}, ...rows.map((c) => h('tr', {},
+      h('td', { text: c.name }),
+      h('td', { class: 'ltr', text: c.phone }),
+      h('td', {}, stageChip(c, key)),
+      h('td', {}, h('div', { class: 'row-ops' },
+        can(role, 'customer.write') ? h('button', { class: 'btn sm', type: 'button', onClick: () => { cust.setArchived(c.id, false, key); toast(`«${c.name}» از بایگانی برگشت`); refresh(); } }, 'بازگردانی') : null,
+        can(role, 'customer.purge') ? h('button', { class: 'btn sm danger', type: 'button', onClick: () => confirmDialog({
+          title: 'حذف دائمی', message: `«${c.name}» و فاکتورهایش برای همیشه حذف شوند. این کار قابل برگشت نیست.`,
+          confirmLabel: 'حذف دائمی', danger: true,
+          onConfirm: () => { cust.removeCustomer(c.id, key); toast('حذف دائمی انجام شد'); refresh(); }
+        }) }, 'حذف دائمی') : null))))));
+  root.append(h('div', { class: 'table-wrap' }, table));
 }

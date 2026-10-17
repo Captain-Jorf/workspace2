@@ -1,144 +1,163 @@
-// فاکتورها: صدور، ویرایش، ثبت پرداخت، کپی، حذف با بازگردانی و وضعیت پرداخت.
-// شماره‌ی فاکتور (code) از زمان ثبت ساخته می‌شود و هرگز تکراری نیست.
-import * as db from '../core/db.js';
-import { makeInvoiceCode } from '../core/invoiceCode.js';
-import { DAY_MS } from '../core/format.js';
-import { byId } from './customers.js';
+// فاکتور: شماره از تاریخ و زمان ثبت، محاسبه‌ی جمع و تخفیف، پرداخت‌ها، وضعیت و کپی.
+import * as store from '../core/store.js';
+import { stampCode, DAY, startOfDay } from '../core/jalali.js';
+import { bucket, byId, bizKey } from './customers.js';
 
-export const RANGES = [
-  { value: 0, label: 'همه‌ی زمان‌ها' },
-  { value: 30, label: '۳۰ روز اخیر' },
-  { value: 90, label: '۹۰ روز اخیر' }
+export const INVOICE_FILTERS = [
+  { id: 'all', label: 'همه' },
+  { id: 'draft', label: 'پیش‌نویس' },
+  { id: 'pending', label: 'در انتظار' },
+  { id: 'overdue', label: 'معوقه' },
+  { id: 'paid', label: 'پرداخت‌شده' }
 ];
 
-export function list({ rangeDays = 0 } = {}, key = db.activeBizKey(), now = Date.now()) {
-  const b = db.bucket(key);
-  return b.invoices
-    .filter((i) => !rangeDays || i.issued >= now - rangeDays * DAY_MS)
-    .sort((a, c) => c.issued - a.issued);
+export const STATUS_LABEL = { draft: 'پیش‌نویس', pending: 'در انتظار', overdue: 'معوقه', paid: 'پرداخت‌شده' };
+
+export function totals(inv) {
+  const subtotal = inv.items.reduce((sum, it) => sum + it.qty * it.price, 0);
+  const discount = Math.min(inv.discount || 0, subtotal);
+  const total = subtotal - discount;
+  const paid = inv.payments.reduce((sum, p) => sum + p.amount, 0);
+  return { subtotal, discount, total, paid, due: Math.max(0, total - paid) };
 }
 
-export const paidTotal = (inv) => (inv.payments || []).reduce((sum, p) => sum + p.amount, 0);
-export const remaining = (inv) => Math.max(0, inv.amount - paidTotal(inv));
-
-export function statusOf(inv, now = Date.now()) {
-  if (inv.draft) return 'draft';
-  const paid = paidTotal(inv);
-  if (paid >= inv.amount) return 'paid';
-  if (inv.due < now) return 'overdue';
-  if (paid > 0) return 'partial';
-  return 'issued';
+export function invoiceStatus(inv, now = Date.now()) {
+  if (inv.status === 'draft') return 'draft';
+  const t = totals(inv);
+  if (t.due === 0) return 'paid';
+  if (inv.dueAt && inv.dueAt < now) return 'overdue';
+  return 'pending';
 }
 
-export const STATUS_LABEL = {
-  draft: 'پیش‌نویس',
-  issued: 'صادر شده',
-  partial: 'پرداخت جزئی',
-  overdue: 'معوق',
-  paid: 'پرداخت شده'
-};
-
-function freshCode(ts, key) {
-  const taken = new Set(db.bucket(key).invoices.map((i) => i.code));
-  return makeInvoiceCode(ts, taken);
+export function list(filter = 'all', key = bizKey(), now = Date.now()) {
+  return bucket(key).invoices
+    .filter((inv) => filter === 'all' || invoiceStatus(inv, now) === filter)
+    .sort((a, b) => b.createdAt - a.createdAt);
 }
 
-export function create({ customerId, amount, dueDays = 14, draft = false, notes = '' }, key = db.activeBizKey()) {
-  const customer = byId(customerId, key);
-  if (!customer) return { error: 'مشتری انتخاب نشده است.' };
-  if (!(amount > 0)) return { error: 'مبلغ فاکتور باید بیشتر از صفر باشد.' };
-  const b = db.bucket(key);
-  const issued = Date.now();
+export function byInvoiceId(id, key = bizKey()) {
+  return bucket(key).invoices.find((inv) => inv.id === id) || null;
+}
+
+export function forCustomer(customerId, key = bizKey()) {
+  return bucket(key).invoices.filter((inv) => inv.customerId === customerId).sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/** شماره‌ی یکتا: کد زمان ثبت، و در صورت برخورد، پسوند عددی */
+function uniqueNo(createdAt, key) {
+  const base = stampCode(createdAt);
+  const taken = new Set(bucket(key).invoices.map((inv) => inv.no));
+  if (!taken.has(base)) return base;
+  let n = 2;
+  while (taken.has(`${base}-${n}`)) n += 1;
+  return `${base}-${n}`;
+}
+
+export function validateInvoice(data) {
+  const errors = {};
+  if (!data.customerId) errors.customerId = 'مشتری را انتخاب کن';
+  const items = Array.isArray(data.items) ? data.items : [];
+  if (!items.length) errors.items = 'حداقل یک قلم اضافه کن';
+  items.forEach((it, i) => {
+    if (!String(it.title || '').trim()) errors[`item-${i}-title`] = 'عنوان قلم الزامی است';
+    if (!(Number(it.qty) > 0)) errors[`item-${i}-qty`] = 'تعداد باید بیشتر از صفر باشد';
+    if (!(Number(it.price) >= 0)) errors[`item-${i}-price`] = 'قیمت نامعتبر است';
+  });
+  const subtotal = items.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
+  if ((Number(data.discount) || 0) > subtotal) errors.discount = 'تخفیف بیشتر از جمع فاکتور است';
+  return errors;
+}
+
+function cleanItems(items) {
+  return items.map((it) => ({ title: String(it.title).trim(), qty: Math.round(Number(it.qty)), price: Math.round(Number(it.price)) }));
+}
+
+export function createInvoice(data, key = bizKey(), now = Date.now()) {
+  const errors = validateInvoice(data);
+  if (Object.keys(errors).length) return { errors };
+  if (!byId(data.customerId, key)) return { errors: { customerId: 'مشتری پیدا نشد' } };
   const inv = {
-    id: db.nextId('nextInv', key),
-    no: 0,
-    code: freshCode(issued, key),
-    customerId,
-    custName: customer.name,
-    amount: Math.round(amount),
-    issued,
-    due: issued + dueDays * DAY_MS,
-    draft: !!draft,
-    notes: String(notes || '').trim(),
+    id: store.nextSeq('invoice', key),
+    no: uniqueNo(now, key),
+    customerId: data.customerId,
+    createdAt: now,
+    dueAt: data.dueAt ?? null,
+    status: data.status === 'draft' ? 'draft' : 'issued',
+    discount: Math.round(Number(data.discount) || 0),
+    items: cleanItems(data.items),
+    payments: [],
+    notes: String(data.notes || '').trim()
+  };
+  bucket(key).invoices.push(inv);
+  store.commit();
+  return { invoice: inv };
+}
+
+export function updateInvoice(id, data, key = bizKey()) {
+  const inv = byInvoiceId(id, key);
+  if (!inv) return { error: 'فاکتور پیدا نشد' };
+  const errors = validateInvoice(data);
+  if (Object.keys(errors).length) return { errors };
+  Object.assign(inv, {
+    customerId: data.customerId,
+    dueAt: data.dueAt ?? null,
+    status: data.status === 'draft' ? 'draft' : 'issued',
+    discount: Math.round(Number(data.discount) || 0),
+    items: cleanItems(data.items),
+    notes: String(data.notes || '').trim()
+  });
+  store.commit();
+  return { invoice: inv };
+}
+
+export function addPayment(id, amount, key = bizKey(), now = Date.now()) {
+  const inv = byInvoiceId(id, key);
+  if (!inv) return { error: 'فاکتور پیدا نشد' };
+  const value = Math.round(Number(amount));
+  const due = totals(inv).due;
+  if (!(value > 0)) return { error: 'مبلغ پرداخت باید بیشتر از صفر باشد' };
+  if (value > due) return { error: 'مبلغ پرداخت از مانده‌ی فاکتور بیشتر است' };
+  if (inv.status === 'draft') inv.status = 'issued';
+  inv.payments.push({ amount: value, at: now });
+  store.commit();
+  return { invoice: inv };
+}
+
+/** کپی: فاکتور پیش‌نویس تازه با شماره‌ی جدید و بدون پرداخت */
+export function copyInvoice(id, key = bizKey(), now = Date.now()) {
+  const src = byInvoiceId(id, key);
+  if (!src) return { error: 'فاکتور پیدا نشد' };
+  const copy = {
+    ...structuredClone(src),
+    id: store.nextSeq('invoice', key),
+    no: uniqueNo(now, key),
+    createdAt: now,
+    dueAt: null,
+    status: 'draft',
     payments: []
   };
-  inv.no = inv.id;
-  b.invoices.push(inv);
-  customer.log.push({ at: issued, type: 'invoice', text: `فاکتور ${inv.code} ${draft ? 'به‌صورت پیش‌نویس ثبت شد' : 'صادر شد'}` });
-  db.touch();
-  return { invoice: inv };
+  bucket(key).invoices.push(copy);
+  store.commit();
+  return { invoice: copy };
 }
 
-export function update(id, { amount, dueDays, draft, notes }, key = db.activeBizKey()) {
-  const inv = find(id, key);
-  if (!inv) return { error: 'فاکتور پیدا نشد.' };
-  if (!(amount > 0)) return { error: 'مبلغ فاکتور باید بیشتر از صفر باشد.' };
-  inv.amount = Math.round(amount);
-  if (dueDays) inv.due = inv.issued + dueDays * DAY_MS;
-  inv.draft = !!draft;
-  inv.notes = String(notes || '').trim();
-  byId(inv.customerId, key)?.log.push({ at: Date.now(), type: 'edit', text: `فاکتور ${inv.code} ویرایش شد` });
-  db.touch();
-  return { invoice: inv };
+export function removeInvoice(id, key = bizKey()) {
+  const b = bucket(key);
+  const index = b.invoices.findIndex((inv) => inv.id === id);
+  if (index < 0) return { error: 'فاکتور پیدا نشد' };
+  const [invoice] = b.invoices.splice(index, 1);
+  store.commit();
+  return { snapshot: { invoice, index } };
 }
 
-export function addPayment(id, amount, key = db.activeBizKey()) {
-  const inv = find(id, key);
-  if (!inv) return { error: 'فاکتور پیدا نشد.' };
-  if (inv.draft) return { error: 'پیش‌نویس قابل پرداخت نیست؛ ابتدا آن را صادر کن.' };
-  if (!(amount > 0)) return { error: 'مبلغ پرداخت باید بیشتر از صفر باشد.' };
-  if (amount > remaining(inv)) return { error: 'مبلغ پرداخت از مانده‌ی فاکتور بیشتر است.' };
-  const at = Date.now();
-  inv.payments.push({ at, amount: Math.round(amount) });
-  byId(inv.customerId, key)?.log.push({ at, type: 'payment', text: `پرداخت ${inv.code}` });
-  db.touch();
-  return { invoice: inv };
+export function restoreInvoice(snapshot, key = bizKey()) {
+  const b = bucket(key);
+  if (!b.invoices.some((inv) => inv.id === snapshot.invoice.id)) {
+    b.invoices.splice(Math.min(snapshot.index, b.invoices.length), 0, snapshot.invoice);
+    store.commit();
+  }
+  return { invoice: snapshot.invoice };
 }
 
-export function copy(id, key = db.activeBizKey()) {
-  const src = find(id, key);
-  if (!src) return { error: 'فاکتور پیدا نشد.' };
-  const b = db.bucket(key);
-  const issued = Date.now();
-  const inv = {
-    id: db.nextId('nextInv', key),
-    no: 0,
-    code: freshCode(issued, key),
-    customerId: src.customerId,
-    custName: src.custName,
-    amount: src.amount,
-    issued,
-    due: issued + (src.due - src.issued),
-    draft: true,
-    notes: src.notes,
-    payments: []
-  };
-  inv.no = inv.id;
-  b.invoices.push(inv);
-  db.touch();
-  return { invoice: inv };
-}
-
-export function remove(id, key = db.activeBizKey()) {
-  const b = db.bucket(key);
-  const idx = b.invoices.findIndex((i) => i.id === id);
-  if (idx < 0) return null;
-  const [inv] = b.invoices.splice(idx, 1);
-  db.touch();
-  return { invoice: inv, index: idx };
-}
-
-export function restore(snapshot, key = db.activeBizKey()) {
-  if (!snapshot) return;
-  const b = db.bucket(key);
-  b.invoices.splice(Math.min(snapshot.index, b.invoices.length), 0, snapshot.invoice);
-  db.touch();
-}
-
-export function find(id, key = db.activeBizKey()) {
-  return db.bucket(key).invoices.find((i) => i.id === id) || null;
-}
-
-export function forCustomer(customerId, key = db.activeBizKey()) {
-  return db.bucket(key).invoices.filter((i) => i.customerId === customerId).sort((a, c) => c.issued - a.issued);
-}
+export const DAY_MS = DAY;
+export const dayStart = startOfDay;

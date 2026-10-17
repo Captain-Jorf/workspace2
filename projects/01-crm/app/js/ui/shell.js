@@ -1,254 +1,186 @@
-// پوسته‌ی برنامه: منوی کناری، نوار بالا، فیلترها، جستجو، وضعیت ذخیره، کلیدهای میان‌بر و چرخه‌ی رندر.
-import * as db from '../core/db.js';
-import { bus } from '../core/bus.js';
-import { h, $, $$, clear } from '../core/dom.js';
-import { BUSINESSES, bizOf } from '../config/businesses.js';
-import { FILTERS, dueToday } from '../domain/customers.js';
-import { can } from '../core/permissions.js';
-import { closeDialog, isDialogOpen } from './dialog.js';
-import { renderStart, showRoleDialog, showAccountDialog } from './start.js';
-import { VIEWS, NAV } from '../views/index.js';
-import { openCustomerForm } from '../features/customerForm.js';
-import { openSettings } from '../features/settings.js';
-import { openPalette } from './palette.js';
-import * as auth from '../domain/auth.js';
+// پوسته‌ی برنامه: منوی راست (هشت صفحه)، نوار بالا با عنوان، کاربر، جستجو، فیلترها و دکمه‌های صفحه، و رندر نماها.
+import * as store from '../core/store.js';
+import { h, clear, $ } from '../core/dom.js';
+import { BUSINESSES } from '../config/businesses.js';
+import { can, ROLES } from '../config/roles.js';
+import { ctx } from './context.js';
 import { applyTheme } from './theme.js';
+import { VIEWS, VIEW_ORDER } from '../views/index.js';
+import { emptyState } from '../views/parts.js';
+import { openCustomerForm } from '../features/customerForm.js';
+import { openInvoiceForm } from '../features/invoiceForm.js';
+import { openNoteForm } from '../features/noteForm.js';
+import { exportCustomersCsv } from '../views/customers.js';
+import { showStart } from '../ui/start.js';
+import { openPalette } from './palette.js';
+import { closeAllDialogs, isDialogOpen } from './dialog.js';
 
-const ctx = { view: 'today', filter: 'all', query: '' };
-let mounted = null;
-let renderQueued = false;
+const ACTION_LABELS = {
+  notice: ['اطلاعیه‌ی جدید', 'primary'],
+  customer: ['مشتری جدید', 'ghost'],
+  invoice: ['فاکتور جدید', 'primary'],
+  note: ['یادداشت جدید', 'primary'],
+  csv: ['خروجی CSV', '']
+};
 
-const $start = () => $('#start');
-const $shell = () => $('#shell');
+let refreshTimer = null;
 
-/** وضعیت منو فقط ظاهری است؛ با flush ذخیره می‌شود و رندر کامل صفحه را دوباره اجرا نمی‌کند */
-function setCollapsed(value) {
-  db.current().collapsed = !!value;
-  db.flush();
-  applyCollapsed();
-}
-
-function applyCollapsed() {
-  const collapsed = !!db.current().collapsed;
-  $shell().classList.toggle('collapsed', collapsed);
-  $('#toggleSide').setAttribute('aria-expanded', String(!collapsed));
-}
-
-function scheduleRender() {
-  if (renderQueued) return;
-  renderQueued = true;
-  requestAnimationFrame(() => { renderQueued = false; render(); });
-}
-
-function updateStatus() {
-  const saved = $('#saveState');
-  const ok = db.storageStatus();
-  saved.textContent = ok ? 'روی دستگاه ذخیره شد' : 'حافظه‌ی مرورگر در دسترس نیست';
-  saved.classList.toggle('warn', !ok);
-  const net = $('#netState');
-  net.textContent = navigator.onLine ? 'آنلاین' : 'آفلاین · بدون نیاز به اینترنت';
-  net.classList.toggle('warn', !navigator.onLine);
-}
-
-function buildNav() {
-  const nav = $('#navList');
-  clear(nav);
-  NAV.forEach((id) => {
-    const meta = VIEWS[id].meta;
-    nav.append(h('button', { class: 'nav', type: 'button', dataset: { view: id }, onClick: () => go(id) },
-      h('span', { class: 'ic', 'aria-hidden': 'true' }, meta.icon),
-      h('span', { class: 'label' }, meta.label),
-      id === 'today' ? h('span', { class: 'badge', id: 'badgeToday' }, '۰') : null));
-  });
-  nav.append(h('div', { class: 'sep' }));
-  const s = auth.session();
-  nav.append(h('button', {
-    class: 'nav profile', type: 'button', id: 'profileBtn',
-    onClick: () => (s ? openSettings({ onChange: scheduleRender, onSwitch: switchBusiness })
-      : showAccountDialog(db.activeBizKey(), scheduleRender))
-  },
-  h('span', { class: 'ic', 'aria-hidden': 'true' }, '◎'),
-  h('span', { class: 'label' }, s ? s.name : 'ورود / ثبت‌نام')));
-  nav.append(h('button', { class: 'nav', type: 'button', onClick: () => openSettings({ onChange: scheduleRender, onSwitch: switchBusiness }) },
-    h('span', { class: 'ic', 'aria-hidden': 'true' }, '⚙'), h('span', { class: 'label' }, 'تنظیمات')));
-  nav.append(h('button', { class: 'nav', type: 'button', onClick: switchBusiness },
-    h('span', { class: 'ic', 'aria-hidden': 'true' }, '⇄'), h('span', { class: 'label' }, 'تغییر کسب‌وکار')));
-}
-
-function buildFilters() {
-  const box = $('#filters');
-  clear(box);
-  FILTERS.forEach((f) => {
-    box.append(h('button', {
-      class: 'chip', type: 'button', dataset: { filter: f.id }, 'aria-pressed': String(ctx.filter === f.id),
-      onClick: () => { ctx.filter = f.id; scheduleRender(); }
-    }, f.label));
-  });
-}
-
-function buildHeaderActions() {
-  const box = $('#headerActions');
-  clear(box);
-  if (can(auth.session()?.role, 'customer.create')) {
-    box.append(h('button', { class: 'btn primary', type: 'button', id: 'btnNewNotice', onClick: () => newNotice() },
-      'اطلاعیه‌ی جدید', h('kbd', {}, 'N')));
-    box.append(h('button', { class: 'btn', type: 'button', id: 'btnNewCustomer', onClick: () => newCustomer() }, 'مشتری جدید'));
+export function mountShell() {
+  const shell = $('#shell');
+  shell.hidden = false;
+  if (!shell.dataset.built) {
+    shell.dataset.built = '1';
+    buildChrome();
   }
-  box.append(h('button', { class: 'btn ghost palette-btn', type: 'button', id: 'btnPalette', onClick: () => openCommandPalette(), 'aria-label': 'پالت فرمان و جستجوی سراسری' }, 'جستجو و دستور ', h('kbd', {}, '⌘K')));
-  box.append(h('button', { class: 'icon-btn theme-btn', type: 'button', id: 'themeBtn', 'aria-label': 'تغییر حالت شب و روز', title: 'حالت شب / روز', onClick: toggleTheme }, db.current().theme === 'dark' ? '☀' : '☾'));
-}
-
-export function newNotice() {
-  if (!can(auth.session()?.role, 'customer.create')) return;
-  openCustomerForm({ stage: 0, onSaved: scheduleRender });
-}
-
-export function newCustomer() {
-  if (!can(auth.session()?.role, 'customer.create')) return;
-  const won = BUSINESSES[db.activeBizKey()].won[0];
-  openCustomerForm({ stage: won, onSaved: scheduleRender });
-}
-
-function toggleTheme() {
-  const next = db.current().theme === 'dark' ? 'light' : 'dark';
-  db.setTheme(next);
-  applyTheme();
-  buildHeaderActions();
-}
-
-
-function go(viewId) {
-  closeDialog();
-  ctx.view = viewId;
-  // منو یک لایه‌ی روی صفحه است؛ بعد از انتخاب صفحه جمع می‌شود تا محتوا دیده شود
-  if (!db.current().collapsed) setCollapsed(true);
-  render();
-}
-
-function render() {
-  if (!db.activeBizKey() || !$start().hidden) return;
-  const key = db.activeBizKey();
-  const viewDef = VIEWS[ctx.view];
-  const meta = viewDef.meta;
-  $('#pageTitle').textContent = meta.title;
-  const count = db.bucket(key).customers.filter((c) => !c.archived).length;
-  $('#pageSub').textContent = `${bizOf(key).title} · ${count} مشتری`;
-  $('#filters').hidden = !meta.filters;
-  $('#q').hidden = !meta.search;
-  $('#q').placeholder = meta.searchPlaceholder || 'جستجوی نام یا موبایل (کلید /)';
-  const profile = $('#profileBtn .label');
-  if (profile) profile.textContent = auth.session()?.name || 'ورود / ثبت‌نام';
-  $$('.chip', $('#filters')).forEach((c) => c.setAttribute('aria-pressed', String(c.dataset.filter === ctx.filter)));
-  $$('.nav[data-view]').forEach((b) => b.setAttribute('aria-current', b.dataset.view === ctx.view ? 'page' : 'false'));
-  const due = dueToday().length;
-  const badge = $('#badgeToday');
-  if (badge) badge.textContent = String(due);
-  buildHeaderActions();
-  updateStatus();
-  const root = $('#view');
-  if (!mounted || mounted.id !== ctx.view) {
-    clear(root);
-    const node = h('div', { class: 'view-root', dataset: { view: ctx.view } });
-    root.append(node);
-    mounted = { id: ctx.view, instance: viewDef.mount(node, ctx) };
-  } else {
-    mounted.instance.refresh();
-  }
-}
-
-function showStart() {
-  closeDialog();
-  $shell().hidden = true;
-  $start().hidden = false;
-  mounted = null;
-  renderStart($('#bizGrid'), (key) => pickBusiness(key));
-  updateStatus();
-}
-
-export function showShell() {
-  $start().hidden = true;
-  $shell().hidden = false;
-  applyCollapsed();
-  applyTheme();
-  buildNav();
-  buildFilters();
-  ctx.view = 'today';
-  ctx.filter = 'all';
+  const from = location.hash.replace('#/', '');
+  if (VIEW_ORDER.includes(from)) ctx.view = from;
   ctx.query = '';
   $('#q').value = '';
-  mounted = null;
-  render();
+  renderAll();
 }
 
-function pickBusiness(key) {
-  db.setActiveBiz(key);
-  db.ensureSeeded(key);
-  if (auth.session()) showShell();
-  else showRoleDialog(key, () => showShell());
+export function unmountShell() {
+  $('#shell').hidden = true;
 }
 
-function switchBusiness() {
-  db.setActiveBiz(null);
+export function goView(id) {
+  if (!VIEW_ORDER.includes(id)) return;
+  ctx.view = id;
+  if (location.hash !== `#/${id}`) history.replaceState(null, '', `#/${id}`);
+  renderAll();
+}
+
+/** بازنشانی به صفحه‌ی شروع کسب‌وکار */
+export function goBusiness() {
+  closeAllDialogs();
+  store.get().activeBiz = null;
+  store.commit();
   showStart();
 }
 
-/** ورودهای کلیدی: / برای جستجو، N برای اطلاعیه‌ی جدید، Escape برای بستن */
-function paletteActions() {
-  return [
-    { label: 'اطلاعیه‌ی جدید', run: () => newNotice() },
-    { label: 'مشتری جدید', run: () => newCustomer() },
-    { label: 'تنظیمات', run: () => openSettings({ onChange: scheduleRender, onSwitch: switchBusiness }) },
-    { label: 'تغییر کسب‌وکار', run: () => switchBusiness() },
-    { label: 'تغییر حالت شب و روز', run: () => toggleTheme() }
-  ];
+/** رندر دوباره‌ی صفحه‌ی جاری (با تأخیر کوتاه برای ادغام تغییرات پشت‌سرهم) */
+export function refresh() {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(renderAll, 0);
 }
 
-function openCommandPalette() {
-  if (!db.activeBizKey() || !$start().hidden) return;
-  openPalette({ go, actions: paletteActions() });
-}
-
-function bindKeys() {
-  document.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openCommandPalette(); return; }
-    if (e.key === 'Escape') { closeDialog(); return; }
-    const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '');
-    if (typing || isDialogOpen() || !db.activeBizKey()) return;
-    if (e.key === '/' && !$('#q').hidden) { e.preventDefault(); $('#q').focus(); }
-    if ((e.key === 'n' || e.key === 'N') && !e.ctrlKey && !e.metaKey) { e.preventDefault(); newNotice(); }
-  });
-}
-
-/** ساید بار باز که بیرون از آن کلیک شود، خودکار بسته می‌شود */
-function bindSidebarAutoClose() {
-  document.addEventListener('click', (e) => {
-    if (db.current().collapsed || $shell().hidden) return;
-    // مسیر رویداد در لحظه‌ی کلیک ثبت می‌شود؛ چون منو بعد از کلیک بازسازی می‌شود، target ممکن است جدا شده باشد
-    const inside = e.composedPath().some((el) => el.id === 'side' || el.id === 'toggleSide' || el.id === 'layer');
-    if (inside) return;
-    setCollapsed(true);
-  });
-}
-
-export function init() {
-  applyTheme();
-  $('#toggleSide').addEventListener('click', () => setCollapsed(!db.current().collapsed));
-  $('#q').addEventListener('input', (e) => { ctx.query = e.target.value; scheduleRender(); });
-  bus.on('data', scheduleRender);
-  bus.on('status', updateStatus);
-  window.addEventListener('online', updateStatus);
-  window.addEventListener('offline', updateStatus);
-  $('#footnote').textContent = 'نمونه‌ی کار با داده‌های ساختگی یک برنامه مدیریت مشتری';
-  bindKeys();
-  bindSidebarAutoClose();
-  const active = db.activeBizKey();
-  if (active && auth.session()) {
-    db.ensureSeeded(active);
-    showShell();
-  } else {
-    showStart();
+function buildChrome() {
+  const nav = $('#navList');
+  for (const id of VIEW_ORDER) {
+    const v = VIEWS[id].meta;
+    nav.append(h('button', { class: 'nav-item', type: 'button', dataset: { view: id }, onClick: () => { goView(id); closeSide(); } },
+      h('span', { class: 'nav-icon', 'aria-hidden': 'true', text: v.icon }),
+      h('span', { text: v.label })));
   }
+  $('#toggleSide').addEventListener('click', () => {
+    const open = !$('#side').classList.contains('open');
+    $('#side').classList.toggle('open', open);
+    $('#toggleSide').setAttribute('aria-expanded', String(open));
+  });
+  $('#paletteBtn').addEventListener('click', () => openPalette());
+  $('#themeBtn').addEventListener('click', () => {
+    const s = store.get();
+    s.theme = s.theme === 'dark' ? 'light' : 'dark';
+    store.commit();
+    applyTheme();
+    renderAll();
+  });
+  $('#switchBiz').addEventListener('click', () => goBusiness());
+  $('#q').addEventListener('input', (e) => {
+    ctx.query = e.target.value;
+    renderView();
+  });
+  window.addEventListener('hashchange', () => {
+    const id = location.hash.replace('#/', '');
+    if (VIEW_ORDER.includes(id) && id !== ctx.view) goView(id);
+  });
 }
 
-/** برای تست‌ها و صفحات دیگر */
-export const shellContext = ctx;
+function closeSide() {
+  $('#side').classList.remove('open');
+  $('#toggleSide').setAttribute('aria-expanded', 'false');
+}
+
+export function renderAll() {
+  const s = store.get();
+  if (!s.activeBiz || !s.session) return;
+  const cfg = BUSINESSES[s.activeBiz];
+  const meta = VIEWS[ctx.view].meta;
+
+  $('#brandBiz').textContent = cfg.short;
+  $('#pageTitle').textContent = meta.title;
+  $('#pageSub').textContent = meta.sub();
+  document.title = `${meta.title} · ${cfg.short}`;
+
+  for (const b of $('#navList').children) b.classList.toggle('on', b.dataset.view === ctx.view);
+  $('#userName').textContent = s.session.name;
+  $('#userRole').textContent = ROLES[s.session.role]?.label || '';
+  $('#themeBtn').textContent = s.theme === 'dark' ? '☀ روشن' : '☾ شب';
+  $('#footnote').textContent = `${cfg.title} · داده‌ها روی این دستگاه ذخیره می‌شوند`;
+
+  // فیلترهای فهرست (فقط در صفحاتی که meta.chips دارند)
+  const chips = $('#filters');
+  clear(chips);
+  if (meta.chips) {
+    const list = [
+      ['all', 'همه'], ['today', 'امروز'], ['overdue', 'عقب‌افتاده'], ['open', 'باز'], ['done', 'انجام‌شده‌ها']
+    ];
+    for (const [id, label] of list) {
+      chips.append(h('button', {
+        class: 'chip', type: 'button', 'aria-pressed': String(ctx.filter === id),
+        onClick: () => { ctx.filter = id; renderAll(); }
+      }, label));
+    }
+  }
+  $('#q').placeholder = meta.chips ? 'جستجوی نام یا موبایل (کلید /)' : 'جستجو (کلید /)';
+  $('#q').hidden = meta.searchable === false;
+
+  // دکمه‌های عملیات صفحه
+  const acts = $('#headerActions');
+  clear(acts);
+  const writable = can(s.session.role, 'customer.write');
+  for (const a of meta.actions) {
+    const [label, variant] = ACTION_LABELS[a];
+    if (a === 'csv') {
+      acts.append(h('button', { class: 'btn', type: 'button', onClick: () => exportCustomersCsv() }, label));
+      continue;
+    }
+    if (a === 'invoice' && !can(s.session.role, 'invoice.write')) continue;
+    if (a === 'note' && !can(s.session.role, 'note.write')) continue;
+    if ((a === 'notice' || a === 'customer') && !writable) continue;
+    acts.append(h('button', { class: `btn ${variant}`.trim(), type: 'button', onClick: () => runAction(a) }, label));
+  }
+
+  renderView();
+}
+
+export function runAction(a) {
+  if (a === 'notice') openCustomerForm({ presetStage: 0, onSaved: refresh });
+  if (a === 'customer') openCustomerForm({ onSaved: refresh });
+  if (a === 'invoice') openInvoiceForm({ onSaved: refresh });
+  if (a === 'note') openNoteForm({ onSaved: refresh });
+  if (a === 'csv') exportCustomersCsv();
+}
+
+function renderView() {
+  const root = $('#view');
+  clear(root);
+  root.scrollTop = 0;
+  try {
+    VIEWS[ctx.view].render(root, { refresh: () => refresh() });
+  } catch (err) {
+    console.error(err);
+    root.append(emptyState('خطا در نمایش صفحه', 'صفحه بارگذاری نشد. اطلاعات ذخیره‌شده دست‌نخورده است؛ صفحه را دوباره باز کن.'));
+  }
+  const saved = store.storageAvailable() ? 'ذخیره شد ✓' : 'فقط در حافظه (ذخیره‌ی مرورگر در دسترس نیست)';
+  $('#saveState').textContent = saved;
+  $('#netState').textContent = navigator.onLine === false ? 'آفلاین' : 'روی دستگاه';
+}
+
+export function handleEscape() {
+  if (isDialogOpen()) return false;
+  if ($('#side').classList.contains('open')) { closeSide(); return true; }
+  return false;
+}
+
+export { closeSide };

@@ -1,62 +1,82 @@
-// پالت فرمان (Ctrl/⌘ + K): جابه‌جایی بین صفحه‌ها، اجرای دستورها و پیدا کردن مشتری با یک جستجو.
+// پالت فرمان (Ctrl/⌘+K): پرش به صفحه‌ها، اقدام‌های سریع، جستجوی مشتری و تغییر حالت نمایش.
+import * as store from '../core/store.js';
 import { h } from '../core/dom.js';
-import { openDialog, closeDialog } from './dialog.js';
-import { list, matchesQuery } from '../domain/customers.js';
-import { VIEWS, NAV } from '../views/index.js';
+import { openDialog } from './dialog.js';
+import { applyTheme } from './theme.js';
+import { VIEWS, VIEW_ORDER } from '../views/index.js';
+import * as cust from '../domain/customers.js';
 import { openCustomerDetail } from '../features/customerDetail.js';
+import { goView, runAction, refresh } from './shell.js';
+import { signOut } from './start.js';
 
-/** openPalette({ go, actions }) — actions: [{ label, run }] */
-export function openPalette({ go, actions = [] }) {
-  const input = h('input', {
-    class: 'input palette-input', type: 'search', placeholder: 'صفحه، دستور یا نام مشتری…',
-    'aria-label': 'پالت فرمان', autocomplete: 'off'
-  });
+export function paletteItems() {
+  const s = store.get();
+  const items = VIEW_ORDER.map((id) => ({ label: `برو به ${VIEWS[id].meta.label}`, hint: 'صفحه', run: () => goView(id) }));
+  items.push(
+    { label: 'اطلاعیه‌ی جدید', hint: 'اقدام', run: () => runAction('notice') },
+    { label: 'مشتری جدید', hint: 'اقدام', run: () => runAction('customer') },
+    { label: 'فاکتور جدید', hint: 'اقدام', run: () => runAction('invoice') },
+    { label: s.theme === 'dark' ? 'حالت روشن' : 'حالت شب', hint: 'نمایش', run: () => {
+      s.theme = s.theme === 'dark' ? 'light' : 'dark';
+      store.commit();
+      applyTheme();
+      refresh();
+    } },
+    { label: 'خروج از حساب', hint: 'حساب', run: () => signOut() }
+  );
+  return items;
+}
+
+export function openPalette() {
+  const input = h('input', { class: 'input palette-input', type: 'search', placeholder: 'جستجوی صفحه، اقدام یا مشتری…', 'aria-label': 'دستور یا جستجو' });
   const listEl = h('ul', { class: 'palette-list', role: 'listbox' });
-  let items = [];
   let active = 0;
+  let current = [];
 
-  function build() {
-    const q = input.value.trim();
-    const pages = NAV.map((id) => ({ label: VIEWS[id].meta.label, hint: 'صفحه', run: () => go(id) }))
-      .filter((i) => !q || i.label.includes(q));
-    const acts = actions.map((a) => ({ label: a.label, hint: 'دستور', run: a.run }))
-      .filter((i) => !q || i.label.includes(q));
-    const customers = q
-      ? list({}).filter((c) => matchesQuery(c, q)).slice(0, 8).map((c) => ({ label: c.name, hint: c.phone, run: () => openCustomerDetail(c.id) }))
+  const rowsFor = (q) => {
+    const key = store.get().activeBiz;
+    const needle = q.trim().toLowerCase();
+    const cmds = paletteItems().filter((c) => !needle || c.label.toLowerCase().includes(needle));
+    const customers = needle
+      ? cust.list({}, key).filter((c) => cust.matchesQuery(c, needle)).slice(0, 8)
+        .map((c) => ({ label: c.name, hint: 'مشتری', run: () => openCustomerDetail(c.id, { onChange: refresh }) }))
       : [];
-    items = [...acts, ...pages, ...customers];
-    active = 0;
-    render();
-  }
+    return [...cmds, ...customers];
+  };
 
-  function render() {
-    listEl.replaceChildren(...(items.length
-      ? items.map((item, i) => h('li', { role: 'option', 'aria-selected': String(i === active) },
-        h('button', {
-          class: `palette-item${i === active ? ' on' : ''}`, type: 'button',
-          onClick: () => choose(i), onMouseenter: () => { active = i; render(); }
-        }, h('span', { text: item.label }), h('small', { text: item.hint }))))
-      : [h('li', { class: 'palette-empty', text: 'موردی پیدا نشد.' })]));
-  }
+  const paint = () => {
+    listEl.replaceChildren(...current.map((item, i) => h('li', {
+      class: `palette-item${i === active ? ' on' : ''}`, role: 'option', 'aria-selected': String(i === active),
+      onClick: () => pick(i)
+    }, h('span', { text: item.label }), h('span', { class: 'muted small', text: item.hint }))));
+    listEl.children[active]?.scrollIntoView({ block: 'nearest' });
+  };
 
-  function choose(i) {
-    const item = items[i];
+  let handle;
+  const pick = (i) => {
+    const item = current[i];
     if (!item) return;
-    closeDialog();
+    handle.close();
     item.run();
-  }
+  };
 
-  input.addEventListener('input', build);
+  const update = () => {
+    current = rowsFor(input.value);
+    active = 0;
+    paint();
+  };
+
+  input.addEventListener('input', update);
   input.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(items.length - 1, active + 1); render(); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(0, active - 1); render(); }
-    else if (e.key === 'Enter') { e.preventDefault(); choose(active); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(current.length - 1, active + 1); paint(); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(0, active - 1); paint(); }
+    if (e.key === 'Enter') { e.preventDefault(); pick(active); }
   });
 
-  openDialog({
-    kind: 'modal', size: 'palette', title: 'پالت فرمان', sub: 'Esc برای بستن',
-    body: h('div', { class: 'palette' }, input, listEl),
-    actions: []
+  handle = openDialog({
+    kind: 'modal', size: 'palette', title: 'دستورها', sub: 'Ctrl/⌘+K · Esc برای بستن',
+    body: h('div', { class: 'palette' }, input, listEl)
   });
-  build();
+  update();
+  input.focus();
 }

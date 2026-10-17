@@ -1,103 +1,93 @@
-// مشتری‌ها: جدول مرتب‌شدنی، فیلتر، ویرایش، بایگانی، ورود از CSV، ادغام تکراری‌ها و خروجی CSV.
-import { h, clear } from '../core/dom.js';
-import { jNumeric, followUpLabel, money, toFa } from '../core/format.js';
+// مشتری‌ها: فهرست جدولی. کلیک روی هر ردیف جزئیات را باز می‌کند؛ ویرایش و حذف (با بازگردانی) در همان ردیف.
+import { h } from '../core/dom.js';
+import { money, plural } from '../core/format.js';
+import { formatDate } from '../core/jalali.js';
 import { BUSINESSES } from '../config/businesses.js';
-import * as db from '../core/db.js';
-import { list, matchesFilter, matchesQuery, setArchived, duplicateGroups } from '../domain/customers.js';
-import { openCustomerDetail } from '../features/customerDetail.js';
+import { can } from '../config/roles.js';
+import * as cust from '../domain/customers.js';
+import * as store from '../core/store.js';
+import { toast } from '../ui/toast.js';
+import { confirmDialog } from '../ui/dialog.js';
 import { openCustomerForm } from '../features/customerForm.js';
-import { openImport, openMerge } from '../features/importMerge.js';
-import { downloadCsv } from '../core/download.js';
-import { toast } from '../ui/dialog.js';
-import { allowed, emptyState, pageHead, stageControl } from './common.js';
+import { downloadText, toCsv } from '../core/download.js';
+import { emptyState, stageChip, openOnBodyClick } from './parts.js';
+import { ctx } from '../ui/context.js';
 
 export const meta = {
-  id: 'customers', title: 'مشتری‌ها', label: 'مشتری‌ها', icon: '☷', filters: true, search: true,
-  searchPlaceholder: 'جستجوی نام یا موبایل (کلید /)'
+  label: 'مشتری‌ها',
+  icon: '☷',
+  title: 'مشتری‌ها',
+  sub: () => `${BUSINESSES[store.get().activeBiz].title} · جستجو با نام، مسئول یا موبایل (کلید /)`,
+  chips: true,
+  actions: ['customer', 'csv']
 };
 
-const COLS = [
-  { key: 'name', label: 'نام' },
-  { key: 'phone', label: 'موبایل' },
-  { key: 'source', label: 'منبع' },
-  { key: 'stage', label: 'مرحله' },
-  { key: 'amount', label: 'مبلغ' },
-  { key: 'next', label: 'پیگیری بعدی' }
-];
+export function render(root, { refresh }) {
+  const key = store.get().activeBiz;
+  const cfg = BUSINESSES[key];
+  const role = store.get().session?.role;
+  const writable = can(role, 'customer.write');
+  const now = Date.now();
+  const rows = cust.list({}, key)
+    .filter((c) => cust.matchesFilter(c, ctx.filter, now, key) && cust.matchesQuery(c, ctx.query))
+    .sort((a, b) => b.updatedAt - a.updatedAt);
 
-export function mount(root, ctx) {
-  let sort = { key: 'next', dir: 1 };
-  const wrap = h('div', { class: 'view customers' });
-  root.append(wrap);
-
-  function refresh() {
-    const key = db.activeBizKey();
-    const biz = BUSINESSES[key];
-    const all = list({}).filter((c) => matchesFilter(c, ctx.filter) && matchesQuery(c, ctx.query));
-    const rows = [...all].sort((a, b) => compare(a, b, sort));
-    const dupes = duplicateGroups().length;
-    clear(wrap);
-    wrap.append(
-      pageHead('مشتری‌ها', `${toFa(rows.length)} مورد نمایش داده می‌شود`, [
-        allowed('customer.create') ? h('button', { class: 'btn', type: 'button', onClick: () => openImport(() => {}) }, 'ورود از CSV') : null,
-        h('button', { class: 'btn ghost', type: 'button', onClick: exportCsv }, 'خروجی CSV'),
-        allowed('customer.delete') && dupes ? h('button', { class: 'btn', type: 'button', onClick: () => openMerge() }, `ادغام تکراری‌ها (${toFa(dupes)})`) : null
-      ]),
-      rows.length ? table(rows, biz) : emptyState('مشتری‌ای با این فیلتر پیدا نشد.'));
+  root.append(h('p', { class: 'muted small', text: `${plural(rows.length, 'مشتری', 'مشتری')} نمایش داده می‌شود` }));
+  if (!rows.length) {
+    root.append(emptyState('مشتری‌ای پیدا نشد', 'فیلتر یا جستجو را تغییر بده، یا مشتری جدید ثبت کن.'));
+    return;
   }
 
-  function table(rows, biz) {
-    const head = h('tr', {}, COLS.map((col) => h('th', {
-      'aria-sort': sort.key === col.key ? (sort.dir === 1 ? 'ascending' : 'descending') : 'none'
-    }, h('button', {
-      class: 'th-btn', type: 'button',
-      onClick: () => { sort = { key: col.key, dir: sort.key === col.key ? -sort.dir : 1 }; refresh(); }
-    }, col.label, sort.key === col.key ? (sort.dir === 1 ? ' ▲' : ' ▼') : ''))), h('th', { text: 'عملیات' }));
-    return h('div', { class: 'table-wrap' },
-      h('table', { class: 'tbl' },
-        h('thead', {}, head),
-        h('tbody', {}, rows.map((c) => {
-          const f = followUpLabel(c.next);
-          const tr = h('tr', { class: `tone-${f.tone}`, dataset: { id: c.id }, tabindex: '0' },
-            h('td', {}, h('button', { class: 'link-btn', type: 'button', onClick: () => openCustomerDetail(c.id) }, c.name)),
-            h('td', { class: 'num' }, c.phone),
-            h('td', {}, c.source),
-            h('td', {}, stageControl(c)),
-            h('td', { class: 'num' }, c.amount ? money(c.amount) : '—'),
-            h('td', {}, h('span', { class: `follow ${f.tone}`, text: f.text })),
-            h('td', { class: 'actions' },
-              allowed('customer.edit') ? h('button', { class: 'btn ghost sm', type: 'button', onClick: () => openCustomerForm({ customer: c }) }, 'ویرایش') : null,
-              allowed('customer.archive') ? h('button', { class: 'btn ghost sm', type: 'button', onClick: () => archive(c) }, 'بایگانی') : null));
-          tr.addEventListener('click', (e) => { if (!e.target.closest('button, select, input')) openCustomerDetail(c.id); });
-          tr.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target === tr) openCustomerDetail(c.id); });
-          return tr;
-        }))));
+  const table = h('table', { class: 'tbl customers' },
+    h('thead', {}, h('tr', {},
+      h('th', { text: 'نام' }),
+      h('th', { text: cfg.nameStyle === 'company' ? 'مسئول' : 'موبایل' }),
+      h('th', { text: 'موبایل' }),
+      h('th', { text: 'مرحله' }),
+      h('th', { text: 'مبلغ' }),
+      h('th', { text: 'پیگیری بعدی' }),
+      h('th', { text: 'عملیات' }))));
+  const tbody = h('tbody');
+  for (const c of rows) {
+    const tr = h('tr', { class: 'row-click', tabindex: '0', dataset: { id: String(c.id) } },
+      h('td', { text: c.name }),
+      h('td', { text: cfg.nameStyle === 'company' ? (c.contact || '—') : c.source }),
+      h('td', { class: 'ltr', text: c.phone }),
+      h('td', {}, stageChip(c, key)),
+      h('td', { class: 'num', text: c.amount ? money(c.amount) : '—' }),
+      h('td', { class: 'muted small', text: c.followUpAt === null ? 'بدون پیگیری' : formatDate(c.followUpAt) }),
+      h('td', {}, writable ? h('div', { class: 'row-ops' },
+        h('button', { class: 'btn sm', type: 'button', onClick: () => openCustomerForm({ customer: c, onSaved: refresh }) }, 'ویرایش'),
+        h('button', { class: 'btn sm danger', type: 'button', onClick: () => askDelete(c) }, 'حذف')) : null));
+    openOnBodyClick(tr, c.id, refresh);
+    tbody.append(tr);
   }
+  table.append(tbody);
+  root.append(h('div', { class: 'table-wrap' }, table));
 
-  function archive(c) {
-    setArchived(c.id, true);
-    toast(`«${c.name}» بایگانی شد.`, { ms: 5000, action: { label: 'برگردان', run: () => setArchived(c.id, false) } });
+  function askDelete(c) {
+    confirmDialog({
+      title: 'حذف مشتری',
+      message: `«${c.name}» حذف شود؟ تا ۵ ثانیه می‌توانی بازگردانی.`,
+      confirmLabel: 'حذف',
+      danger: true,
+      onConfirm: () => {
+        const r = cust.removeCustomer(c.id, key);
+        if (!r.snapshot) return;
+        toast('مشتری حذف شد', { actionLabel: 'بازگردانی', onAction: () => cust.restoreCustomer(r.snapshot, key) });
+      }
+    });
   }
-
-  function exportCsv() {
-    const key = db.activeBizKey();
-    const biz = BUSINESSES[key];
-    const rows = [['نام', 'موبایل', 'منبع', 'مرحله', 'مبلغ (تومان)', 'تاریخ پیگیری بعدی', 'تاریخ ثبت']];
-    list({}).forEach((c) => rows.push([c.name, c.phone, c.source, biz.stages[c.stage], c.amount, jNumeric(c.next), jNumeric(c.createdAt)]));
-    downloadCsv(rows, `crm-${key}-customers.csv`);
-    toast('فایل CSV ساخته شد.');
-  }
-
-  refresh();
-  return { refresh };
 }
 
-function compare(a, b, { key, dir }) {
-  const get = (c) => {
-    if (key === 'stage') return c.stage;
-    return c[key] ?? '';
-  };
-  const x = get(a), y = get(b);
-  if (typeof x === 'number' && typeof y === 'number') return (x - y) * dir;
-  return String(x).localeCompare(String(y), 'fa') * dir;
+export function exportCustomersCsv() {
+  const key = store.get().activeBiz;
+  const cfg = BUSINESSES[key];
+  const headers = ['نام', 'مسئول', 'موبایل', 'منبع', 'مرحله', 'مبلغ (تومان)', ...cfg.fields.map((f) => f.label)];
+  const rows = cust.list({}, key).map((c) => [
+    c.name, c.contact, c.phone, c.source, cfg.stages[c.stage].label, c.amount,
+    ...cfg.fields.map((f) => c.fields[f.key] || '')
+  ]);
+  downloadText(toCsv(headers, rows), `customers-${key}.csv`);
+  toast(`${plural(rows.length, 'ردیف', 'ردیف')} در فایل CSV ذخیره شد`);
 }
