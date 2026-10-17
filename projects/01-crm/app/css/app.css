@@ -356,3 +356,65 @@ html[dir='ltr'] .title-row, html[dir='ltr'] .top-tools { direction: ltr; }
   .side:not(.open) { visibility: hidden; }
   .side.open { visibility: visible; }
 }
+
+/* ===== نمودارها (داشبورد تصویری و گزارش کار مشتری) ===== */
+.chart { width: 100%; height: auto; display: block; overflow: visible; }
+.chart text { font-family: inherit; }
+.chart .val { font-size: 11px; font-weight: 600; fill: var(--ink); }
+.chart .lbl { font-size: 10.5px; fill: var(--muted); }
+.chart .grid-line { stroke: var(--line); stroke-dasharray: 3 5; }
+.chart .cbar { transform-box: fill-box; transform-origin: 50% 100%; animation: chart-grow .7s cubic-bezier(.2,.7,.2,1) both; }
+.chart .bar-col:hover .cbar { filter: brightness(1.06); }
+.chart .dot { stroke: var(--panel-bg, #fff); stroke-width: 1.5; transition: r .15s; }
+.chart .dot:hover { r: 6; }
+.chart .area { animation: chart-fade .8s ease-out both; }
+.chart .donut-track { stroke: var(--line); fill: none; }
+.chart .donut-seg { transition: stroke-width .15s; }
+.chart .donut-seg:hover { stroke-width: 26; }
+.chart .donut-center { font-size: 22px; font-weight: 700; fill: var(--ink); }
+.chart .donut-sub { font-size: 11.5px; fill: var(--muted); }
+.gauge { max-width: 220px; margin: 0 auto; }
+.spark { width: 100%; height: 36px; margin-top: 4px; }
+@keyframes chart-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes chart-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .chart .cbar, .chart .area { animation: none; } }
+
+.dash-kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+.dash-kpi { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 18px; background: var(--glass-strong); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.dash-kpi strong { font-size: 22px; font-weight: 700; color: var(--ink); }
+.dash-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+.dash-grid.compact { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.dash-card { display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 18px; background: var(--glass-strong); border: 1px solid var(--line); box-shadow: var(--shadow); min-width: 0; }
+.dash-card.wide { grid-column: span 2; }
+.dash-card-head { display: flex; flex-direction: column; gap: 2px; }
+.dash-card-head h3 { margin: 0; font-size: 15px; }
+.gauge-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+@media (max-width: 760px) { .dash-card.wide { grid-column: auto; } }
+
+.legend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.legend li { display: grid; grid-template-columns: 12px 1fr auto; align-items: center; gap: 8px; font-size: 13px; }
+.legend i { width: 12px; height: 12px; border-radius: 4px; display: block; }
+.donut-wrap { display: grid; grid-template-columns: minmax(120px, 160px) 1fr; gap: 12px; align-items: center; }
+.donut-wrap .chart { max-width: 170px; }
+
+.hbars { display: flex; flex-direction: column; gap: 10px; }
+.hbar-row { display: grid; grid-template-columns: minmax(70px, 110px) 1fr auto; gap: 10px; align-items: center; font-size: 13px; }
+.hbar-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink); }
+.hbar-track { height: 12px; border-radius: 999px; background: var(--accent-soft); overflow: hidden; display: block; }
+.hbar-fill { display: block; height: 100%; border-radius: 999px; animation: chart-grow-x .8s ease-out both; transform-origin: right; }
+.hbar-val { font-variant-numeric: tabular-nums; min-width: 48px; text-align: start; }
+@keyframes chart-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+.funnel { display: flex; flex-direction: column; gap: 8px; }
+.funnel-row { display: grid; grid-template-columns: minmax(80px, 120px) 1fr auto; gap: 10px; align-items: center; }
+.funnel-label { font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.funnel-bar { display: block; padding: 6px 10px; border-radius: 10px; color: #1b2a36; font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; transition: filter .15s; }
+.funnel-bar:hover { filter: brightness(1.05); }
+
+.cust-report { display: flex; flex-direction: column; gap: 12px; }
+.cust-report .dash-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+.cust-report .dash-card { padding: 12px; }
+
+.share { display: flex; align-items: center; gap: 10px; min-width: 150px; }
+.share .bar { flex: 1; }
+.share-num { min-width: 42px; text-align: start; font-variant-numeric: tabular-nums; }

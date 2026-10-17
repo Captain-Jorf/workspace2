@@ -1,6 +1,6 @@
 // گزارش‌ها: شاخص‌های کلیدی و جدول مراحل. بدون نمودار.
 import { h } from '../core/dom.js';
-import { money } from '../core/format.js';
+import { money, toFa } from '../core/format.js';
 import { BUSINESSES } from '../config/businesses.js';
 import * as store from '../core/store.js';
 import * as cust from '../domain/customers.js';
@@ -43,5 +43,7 @@ export function render(root) {
       h('td', { text: s.label }),
       h('td', { class: 'num', text: String(counts[i].count) }),
       h('td', { class: 'num', text: counts[i].amount ? money(counts[i].amount) : '—' }),
-      h('td', {}, h('span', { class: 'bar', style: { width: `${Math.round((counts[i].count / max) * 100)}%` } }))))))));
+      h('td', {}, h('div', { class: 'share' },
+        h('span', { class: 'bar', style: { width: `${Math.round((counts[i].count / max) * 100)}%` } }),
+        h('strong', { class: 'share-num', text: `${toFa(all.length ? Math.round((counts[i].count / all.length) * 100) : 0)}٪` })))))))));
 }

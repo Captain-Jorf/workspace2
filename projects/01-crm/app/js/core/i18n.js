@@ -17,6 +17,7 @@ const D = {
   'nav.invoices': ['فاکتورها', 'Invoices', '发票', 'चालान', 'Facturas', 'الفواتير'],
   'nav.notes': ['یادداشت‌ها', 'Notes', '备注', 'नोट्स', 'Notas', 'الملاحظات'],
   'nav.archive': ['بایگانی', 'Archive', '归档', 'संग्रह', 'Archivo', 'الأرشيف'],
+  'nav.charts': ['نمودارها', 'Charts', '图表', 'चार्ट', 'Gráficos', 'الرسوم البيانية'],
   'nav.reports': ['گزارش‌ها', 'Reports', '报表', 'रिपोर्ट', 'Informes', 'التقارير'],
   'nav.settings': ['تنظیمات', 'Settings', '设置', 'सेटिंग्स', 'Ajustes', 'الإعدادات'],
   'btn.palette': ['دستورها', 'Commands', '命令', 'कमांड', 'Comandos', 'الأوامر'],
