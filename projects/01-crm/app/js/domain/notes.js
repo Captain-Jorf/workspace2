@@ -1,26 +1,48 @@
-// یادداشت‌ها: صفحه‌ی مستقل (نه داخل فرم مشتری). هر یادداشت می‌تواند به یک مشتری وصل باشد.
+// یادداشت‌ها: عنوان (حداکثر ۲۰ کلمه) و متن کامل. هر یادداشت می‌تواند به یک مشتری وصل باشد.
 import * as store from '../core/store.js';
 import { bucket, bizKey } from './customers.js';
+
+export const TITLE_MAX_WORDS = 20;
+
+export const wordCount = (text) => String(text || '').trim().split(/\s+/).filter(Boolean).length;
+
+/** عنوان نمایشی: عنوان ذخیره‌شده، یا برای یادداشت‌های قدیمی، ۲۰ کلمه‌ی اول متن */
+export function titleOf(note) {
+  if (note.title) return note.title;
+  return String(note.text || '').trim().split(/\s+/).slice(0, TITLE_MAX_WORDS).join(' ');
+}
 
 export function list(key = bizKey()) {
   return bucket(key).notes.slice().sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
-export function createNote({ text, customerId = null }, key = bizKey(), now = Date.now()) {
-  const body = String(text || '').trim();
-  if (!body) return { errors: { text: 'متن یادداشت خالی است' } };
-  const note = { id: store.nextSeq('note', key), text: body, customerId, createdAt: now, updatedAt: now };
+function validate({ title, text }) {
+  const errors = {};
+  const t = String(title || '').trim();
+  if (!t) errors.title = 'عنوان یادداشت را وارد کن';
+  else if (wordCount(t) > TITLE_MAX_WORDS) errors.title = `عنوان حداکثر ${TITLE_MAX_WORDS} کلمه باشد (الان ${wordCount(t)})`;
+  if (!String(text || '').trim()) errors.text = 'متن یادداشت خالی است';
+  return errors;
+}
+
+export function createNote({ title, text, customerId = null }, key = bizKey(), now = Date.now()) {
+  const errors = validate({ title, text });
+  if (Object.keys(errors).length) return { errors };
+  const note = {
+    id: store.nextSeq('note', key), title: String(title).trim(), text: String(text).trim(),
+    customerId, createdAt: now, updatedAt: now
+  };
   bucket(key).notes.push(note);
   store.commit();
   return { note };
 }
 
-export function updateNote(id, { text, customerId = null }, key = bizKey(), now = Date.now()) {
+export function updateNote(id, { title, text, customerId = null }, key = bizKey(), now = Date.now()) {
   const note = bucket(key).notes.find((n) => n.id === id);
   if (!note) return { error: 'یادداشت پیدا نشد' };
-  const body = String(text || '').trim();
-  if (!body) return { errors: { text: 'متن یادداشت خالی است' } };
-  Object.assign(note, { text: body, customerId, updatedAt: now });
+  const errors = validate({ title, text });
+  if (Object.keys(errors).length) return { errors };
+  Object.assign(note, { title: String(title).trim(), text: String(text).trim(), customerId, updatedAt: now });
   store.commit();
   return { note };
 }
