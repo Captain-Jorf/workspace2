@@ -1,15 +1,15 @@
-// یادداشت‌ها: عنوان (حداکثر ۲۰ کلمه) و متن کامل. هر یادداشت می‌تواند به یک مشتری وصل باشد.
+// یادداشت‌ها: عنوان (حداکثر ۴۰ حرف) و متن کامل. هر یادداشت می‌تواند به یک مشتری وصل باشد.
 import * as store from '../core/store.js';
 import { bucket, bizKey } from './customers.js';
 
-export const TITLE_MAX_WORDS = 20;
+export const TITLE_MAX_CHARS = 40;
 
-export const wordCount = (text) => String(text || '').trim().split(/\s+/).filter(Boolean).length;
+export const charCount = (text) => [...String(text || '').trim()].length;
 
-/** عنوان نمایشی: عنوان ذخیره‌شده، یا برای یادداشت‌های قدیمی، ۲۰ کلمه‌ی اول متن */
+/** عنوان نمایشی: عنوان ذخیره‌شده، یا برای یادداشت‌های قدیمی، ۴۰ حرف اول متن */
 export function titleOf(note) {
   if (note.title) return note.title;
-  return String(note.text || '').trim().split(/\s+/).slice(0, TITLE_MAX_WORDS).join(' ');
+  return [...String(note.text || '').trim()].slice(0, TITLE_MAX_CHARS).join('');
 }
 
 export function list(key = bizKey()) {
@@ -20,7 +20,7 @@ function validate({ title, text }) {
   const errors = {};
   const t = String(title || '').trim();
   if (!t) errors.title = 'عنوان یادداشت را وارد کن';
-  else if (wordCount(t) > TITLE_MAX_WORDS) errors.title = `عنوان حداکثر ${TITLE_MAX_WORDS} کلمه باشد (الان ${wordCount(t)})`;
+  else if (charCount(t) > TITLE_MAX_CHARS) errors.title = `عنوان حداکثر ${TITLE_MAX_CHARS} حرف باشد (الان ${charCount(t)})`;
   if (!String(text || '').trim()) errors.text = 'متن یادداشت خالی است';
   return errors;
 }

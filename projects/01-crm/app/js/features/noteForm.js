@@ -3,7 +3,7 @@ import * as store from '../core/store.js';
 import { h } from '../core/dom.js';
 import * as cust from '../domain/customers.js';
 import * as notes from '../domain/notes.js';
-import { TITLE_MAX_WORDS, wordCount } from '../domain/notes.js';
+import { TITLE_MAX_CHARS, charCount } from '../domain/notes.js';
 import { openDialog } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
 import { field, select, applyErrors, bindCtrlEnter } from './forms.js';
@@ -11,13 +11,13 @@ import { field, select, applyErrors, bindCtrlEnter } from './forms.js';
 export function openNoteForm({ note = null, onSaved = () => {} } = {}) {
   const key = store.get().activeBiz;
   const customers = cust.list({}, key).slice().sort((a, b) => a.name.localeCompare(b.name, 'fa'));
-  const title = h('input', { class: 'input', maxlength: '300', placeholder: 'عنوان کوتاه (حداکثر ۲۰ کلمه)', value: note ? (note.title || '') : '' });
-  const titleWrap = field(`عنوان (حداکثر ${TITLE_MAX_WORDS} کلمه)`, title, { key: 'title', hint: `0 از ${TITLE_MAX_WORDS} کلمه`, wide: true });
+  const title = h('input', { class: 'input', maxlength: String(TITLE_MAX_CHARS), placeholder: `عنوان کوتاه (حداکثر ${TITLE_MAX_CHARS} حرف)`, value: note ? (note.title || '') : '' });
+  const titleWrap = field(`عنوان (حداکثر ${TITLE_MAX_CHARS} حرف)`, title, { key: 'title', hint: `0 از ${TITLE_MAX_CHARS} حرف`, wide: true });
   const counter = titleWrap.querySelector('.hint');
   const paintCount = () => {
-    const n = wordCount(title.value);
-    counter.textContent = `${n} از ${TITLE_MAX_WORDS} کلمه`;
-    counter.style.color = n > TITLE_MAX_WORDS ? 'var(--danger)' : '';
+    const n = charCount(title.value);
+    counter.textContent = `${n} از ${TITLE_MAX_CHARS} حرف`;
+    counter.style.color = n > TITLE_MAX_CHARS ? 'var(--danger)' : '';
   };
   title.addEventListener('input', paintCount);
   paintCount();
