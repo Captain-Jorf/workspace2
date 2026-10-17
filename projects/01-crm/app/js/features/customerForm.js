@@ -11,7 +11,7 @@ import { extraControls, readExtra } from './extraFields.js';
 
 /**
  * openCustomerForm({ stage, customer, onSaved })
- * - بدون customer: مشتری/سرنخ جدید در مرحله‌ی stage
+ * - بدون customer: مشتری/اطلاعیه‌ی جدید در مرحله‌ی stage
  * - با customer: ویرایش
  */
 export function openCustomerForm({ stage = 0, customer = null, onSaved } = {}) {

@@ -1,5 +1,5 @@
-// service worker: پوسته‌ی برنامه را برای کار آفلاین کش می‌کند (stale-while-revalidate برای فایل‌های همین سایت)
-const VERSION = 'crm-v4-2026-10-17';
+// service worker: پوسته‌ی برنامه را برای کار آفلاین کش می‌کند (شبکه‌ی اول، سپس کش)
+const VERSION = 'crm-v5-2026-10-17';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest',
   'css/app.css', 'css/print.css', 'assets/icon.svg',
@@ -30,17 +30,21 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// شبکه‌ی اول: هر بار اگر اینترنت یا سرور در دسترس باشد نسخه‌ی تازه گرفته می‌شود؛ در غیر این صورت از کش آفلاین استفاده می‌شود
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (event.request.method !== 'GET' || url.origin !== self.location.origin) return;
   event.respondWith(
     caches.open(VERSION).then(async (cache) => {
-      const cached = await cache.match(event.request, { ignoreSearch: true });
-      const network = fetch(event.request).then((res) => {
+      try {
+        const res = await fetch(event.request);
         if (res && res.ok) cache.put(event.request, res.clone());
         return res;
-      }).catch(() => cached);
-      return cached || network;
+      } catch (e) {
+        const cached = await cache.match(event.request, { ignoreSearch: true });
+        if (cached) return cached;
+        throw e;
+      }
     })
   );
 });
