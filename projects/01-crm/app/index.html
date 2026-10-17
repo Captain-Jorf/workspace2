@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM ساده · برنامه</title>
+<style>
+@font-face { font-family: "Shoor"; src: url("../themes/mesh/fonts/shoor/ShoorRounded-Regular.ttf"); font-weight: 400; }
+@font-face { font-family: "Shoor"; src: url("../themes/mesh/fonts/shoor/ShoorRounded-Medium.ttf"); font-weight: 500; }
+@font-face { font-family: "Shoor"; src: url("../themes/mesh/fonts/shoor/ShoorRounded-SemiBold.ttf"); font-weight: 600; }
+@font-face { font-family: "Shoor"; src: url("../themes/mesh/fonts/shoor/ShoorRounded-Bold.ttf"); font-weight: 700; }
+:root {
+  --ink: #17303f; --muted: #637f8f; --accent: #4a93c9; --accent-d: #357bb0;
+  --danger: #b42318; --ok: #15803d; --warn: #b45309;
+  --line: rgba(255,255,255,.95); --glass: rgba(255,255,255,.45);
+  --shadow: 0 10px 30px rgba(20,60,100,.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Shoor", "Vazir", system-ui, sans-serif; color: var(--ink); min-height: 100vh;
+  background-color: #fbfdfe;
+  background-image:
+    radial-gradient(at 10% 10%, #e8f4fb 0px, transparent 55%),
+    radial-gradient(at 90% 14%, #f4fafd 0px, transparent 55%),
+    radial-gradient(at 78% 90%, #e2eef9 0px, transparent 55%),
+    radial-gradient(at 16% 88%, #e6f6f9 0px, transparent 55%);
+  background-attachment: fixed; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: inherit; }
+.glass { background: var(--glass); border: 1px solid var(--line); border-radius: 22px;
+  backdrop-filter: blur(26px) saturate(140%); -webkit-backdrop-filter: blur(26px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8), var(--shadow); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app { display: grid; grid-template-columns: 220px 1fr; gap: 20px; padding: 20px; min-height: 100vh; }
+/* sidebar */
+.side { padding: 20px 14px; display: flex; flex-direction: column; gap: 6px; align-self: start; position: sticky; top: 20px; }
+.logo { font-weight: 700; font-size: 20px; padding: 6px 12px 16px; }
+.logo span { color: var(--accent); }
+.nav { display: flex; justify-content: space-between; align-items: center; text-align: start; background: none; border: 0; padding: 11px 14px; border-radius: 14px; color: var(--muted); cursor: pointer; font-weight: 500; }
+.nav:hover, .nav[aria-current="page"] { background: rgba(255,255,255,.7); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.nav[aria-current="page"] { color: var(--accent-d); }
+.badge { font-size: 12px; background: var(--danger); color: #fff; border-radius: 999px; padding: 1px 8px; min-width: 22px; text-align: center; }
+/* main */
+main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.top { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.top h1 { font-size: 26px; font-weight: 700; }
+.top p { color: var(--muted); margin-top: 4px; font-size: 14px; }
+.actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.input { height: 44px; padding: 0 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.7); min-width: 200px; outline: none; }
+.input.area { height: auto; min-height: 80px; padding: 10px 14px; resize: vertical; }
+.pill { font-size: 13px; color: var(--ok); background: rgba(255,255,255,.7); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; white-space: nowrap; }
+kbd { font-family: inherit; font-size: 12px; background: rgba(255,255,255,.35); border-radius: 6px; padding: 1px 6px; margin-inline-start: 6px; }
+/* buttons */
+.btn { height: 44px; padding: 0 18px; border-radius: 14px; border: 1px solid var(--line); cursor: pointer; font-weight: 600; background: rgba(255,255,255,.6); text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; transition: transform .08s, background .15s; }
+.btn:hover { background: rgba(255,255,255,.9); }
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 6px 16px rgba(74,147,201,.3); }
+.btn.primary:hover { background: var(--accent-d); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.danger { background: transparent; border-color: transparent; color: var(--danger); }
+.btn.danger.confirm { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn.sm { height: 34px; padding: 0 12px; border-radius: 12px; font-size: 14px; }
+.btn.wa { color: #15803d; }
+.btn.call { color: var(--accent-d); }
+.icon { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255,255,255,.6); cursor: pointer; font-size: 16px; }
+/* views */
+.view { display: none; flex-direction: column; gap: 18px; }
+.view.on { display: flex; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.kpi { padding: 18px; display: flex; flex-direction: column; gap: 6px; }
+.kpi .lbl { color: var(--muted); font-size: 14px; }
+.kpi b { font-size: 28px; font-weight: 700; }
+.kpi small { color: var(--muted); font-size: 13px; }
+.section-title { font-weight: 700; font-size: 18px; margin-top: 4px; }
+.list { display: flex; flex-direction: column; gap: 10px; }
+.row-item { padding: 14px 16px; display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; border-radius: 18px; }
+.row-item .info { display: flex; flex-direction: column; gap: 3px; min-width: 200px; flex: 1; }
+.row-item .nm { font-weight: 600; }
+.row-item .meta { color: var(--muted); font-size: 13px; }
+.row-item .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.over { color: var(--danger); font-weight: 600; }
+.today { color: var(--warn); font-weight: 600; }
+.empty { color: var(--muted); font-size: 14px; text-align: center; padding: 22px 8px; }
+/* pipeline */
+.board { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; align-items: start; }
+.col { padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 240px; transition: background .15s; }
+.col.over-drop { background: rgba(255,255,255,.7); }
+.col header { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; font-weight: 600; }
+.col header em { font-style: normal; font-size: 13px; color: var(--muted); background: rgba(255,255,255,.7); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+.card-lead { padding: 14px; display: flex; flex-direction: column; gap: 6px; cursor: grab; border-radius: 18px; }
+.card-lead:active { cursor: grabbing; }
+.card-lead .nm { font-weight: 600; }
+.card-lead .meta { color: var(--muted); font-size: 13px; }
+.card-lead .amt { font-weight: 600; font-size: 14px; }
+.card-lead .fu { font-size: 13px; color: var(--muted); }
+.card-lead .row { display: flex; gap: 6px; align-items: center; justify-content: space-between; margin-top: 6px; flex-wrap: wrap; }
+.card-lead select { height: 34px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.7); padding: 0 8px; font-size: 13px; }
+.flash { animation: flash 1.2s ease; }
+@keyframes flash { 0% { box-shadow: 0 0 0 4px rgba(74,147,201,.5); } 100% { box-shadow: none; } }
+/* table */
+.table-wrap { padding: 8px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 620px; }
+th, td { padding: 12px 10px; text-align: start; border-bottom: 1px solid rgba(23,48,63,.07); }
+th { color: var(--muted); font-weight: 600; font-size: 13px; }
+/* reports */
+.bars { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.bar-row { display: grid; grid-template-columns: 110px 1fr 60px; gap: 10px; align-items: center; font-size: 14px; }
+.bar { height: 14px; border-radius: 999px; background: rgba(255,255,255,.7); overflow: hidden; border: 1px solid var(--line); }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+/* drawer & modal */
+.scrim { position: fixed; inset: 0; background: rgba(23,48,63,.15); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 5; }
+.scrim.on { opacity: 1; pointer-events: auto; }
+.drawer { position: fixed; top: 16px; bottom: 16px; left: 16px; width: min(440px, calc(100% - 32px)); padding: 22px; transform: translateX(-120%); transition: transform .25s ease; display: flex; flex-direction: column; z-index: 10; }
+.drawer.on { transform: translateX(0); }
+.drawer header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.drawer h2 { font-size: 20px; }
+.drawer form { display: flex; flex-direction: column; gap: 14px; overflow: auto; flex: 1; padding: 2px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 14px; font-weight: 500; }
+.field .input { width: 100%; min-width: 0; }
+.field .hint { font-size: 12px; color: var(--muted); }
+.field .err { font-size: 13px; color: var(--danger); }
+.field.bad .input { border-color: var(--danger); }
+.drawer footer { display: flex; gap: 10px; padding-top: 14px; border-top: 1px solid rgba(23,48,63,.08); margin-top: 6px; }
+.modal { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-46%); width: min(460px, calc(100% - 32px)); padding: 22px; z-index: 12; opacity: 0; pointer-events: none; transition: all .2s; }
+.modal.on { opacity: 1; pointer-events: auto; transform: translate(-50%,-50%); }
+.modal h2 { font-size: 19px; margin-bottom: 4px; }
+.modal .sub { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+.choices { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.choice { padding: 12px 6px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.6); cursor: pointer; font-weight: 600; font-size: 14px; }
+.choice[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
+.modal footer { display: flex; gap: 10px; justify-content: flex-start; margin-top: 16px; }
+/* toast */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 12px 16px; display: flex; gap: 14px; align-items: center; z-index: 20; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.on { opacity: 1; pointer-events: auto; }
+.foot { color: var(--muted); font-size: 13px; text-align: center; }
+/* responsive */
+@media (max-width: 1100px) {
+  .board { grid-template-columns: repeat(4, minmax(240px, 1fr)); overflow-x: auto; }
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; padding: 12px; }
+  .side { flex-direction: row; flex-wrap: wrap; position: static; padding: 10px; }
+  .nav { padding: 8px 10px; font-size: 14px; }
+  .logo { padding: 6px 8px; }
+  .input { min-width: 0; width: 100%; }
+  .two { grid-template-columns: 1fr; }
+  .bar-row { grid-template-columns: 90px 1fr 50px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="glass side" aria-label="ناوبری اصلی">
+    <div class="logo">CRM <span>ساده</span></div>
+    <button class="nav" type="button" data-view="today" aria-current="page">امروز <span class="badge" id="badgeToday">۰</span></button>
+    <button class="nav" type="button" data-view="pipeline">سرنخ‌ها</button>
+    <button class="nav" type="button" data-view="customers">مشتری‌ها</button>
+    <button class="nav" type="button" data-view="reports">گزارش‌ها</button>
+  </aside>
+
+  <main>
+    <header class="glass top">
+      <div>
+        <h1 id="pageTitle">امروز</h1>
+        <p id="pageSub"></p>
+      </div>
+      <div class="actions">
+        <input id="q" class="input" type="search" placeholder="جستجو (کلید /)" aria-label="جستجو">
+        <span class="pill" id="sync">ذخیره روی دستگاه</span>
+        <button id="newBtn" class="btn primary" type="button">سرنخ جدید <kbd>N</kbd></button>
+      </div>
+    </header>
+
+    <!-- امروز -->
+    <section class="view on" id="v-today" aria-label="کارهای امروز">
+      <div class="kpis" id="kpisToday"></div>
+      <div class="section-title">پیگیری‌های امروز و عقب‌افتاده</div>
+      <div class="list" id="todayList"></div>
+    </section>
+
+    <!-- سرنخ‌ها -->
+    <section class="view" id="v-pipeline" aria-label="پایپ‌لاین فروش">
+      <div class="board" id="board"></div>
+    </section>
+
+    <!-- مشتری‌ها -->
+    <section class="view" id="v-customers" aria-label="لیست مشتری‌ها">
+      <div class="glass table-wrap">
+        <table>
+          <thead><tr><th>نام</th><th>موبایل</th><th>منبع</th><th>مرحله</th><th>مبلغ</th><th>پیگیری بعدی</th></tr></thead>
+          <tbody id="custBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- گزارش‌ها -->
+    <section class="view" id="v-reports" aria-label="گزارش‌ها">
+      <div class="kpis" id="kpisReports"></div>
+      <div class="two">
+        <div class="glass bars"><div class="section-title">سرنخ‌ها به تفکیک مرحله</div><div id="stageBars"></div></div>
+        <div class="glass bars"><div class="section-title">منبع آشنایی</div><div id="sourceBars"></div></div>
+      </div>
+    </section>
+
+    <div class="foot">نمونه‌ی کار · داده‌ی ساختگی · ذخیره‌ی محلی در مرورگر</div>
+  </main>
+</div>
+
+<!-- کشوی سرنخ -->
+<div id="scrim" class="scrim"></div>
+<aside id="drawer" class="glass drawer" aria-hidden="true" aria-labelledby="dtitle">
+  <header><h2 id="dtitle">سرنخ جدید</h2><button id="closeBtn" class="icon" type="button" aria-label="بستن">✕</button></header>
+  <form id="form" novalidate>
+    <div class="field" id="f-name"><label for="name">نام شرکت یا مشتری</label><input id="name" class="input" type="text" autocomplete="off" placeholder="مثلاً فروشگاه آریا"><div class="err" role="alert"></div></div>
+    <div class="field" id="f-phone"><label for="phone">شماره موبایل</label><input id="phone" class="input" type="tel" inputmode="numeric" placeholder="۰۹۱۲۱۲۳۴۵۶۷"><div class="err" role="alert"></div></div>
+    <div class="field" id="f-source"><label for="source">منبع آشنایی</label>
+      <select id="source" class="input"><option value="">انتخاب کنید</option><option>اینستاگرام</option><option>معرفی دوستان</option><option>وب‌سایت</option><option>تماس ورودی</option><option>نمایشگاه</option></select>
+      <div class="err" role="alert"></div></div>
+    <div class="field"><label for="stage">مرحله</label>
+      <select id="stage" class="input"><option value="0">جدید</option><option value="1">در تماس</option><option value="2">پیشنهاد</option><option value="3">برنده</option></select></div>
+    <div class="field" id="f-amount"><label for="amount">مبلغ پیشنهادی (تومان)</label><input id="amount" class="input" type="text" inputmode="numeric" placeholder="مثلاً ۲۵۰۰۰۰۰۰"><div class="hint">برای مراحل «پیشنهاد» و «برنده» الزامی است.</div><div class="err" role="alert"></div></div>
+    <div class="field"><label for="next">پیگیری بعدی</label>
+      <select id="next" class="input"><option value="1">فردا</option><option value="2" selected>۲ روز دیگر (پیشنهادی)</option><option value="7">یک هفته دیگر</option><option value="14">دو هفته دیگر</option></select></div>
+  </form>
+  <footer>
+    <button id="saveBtn" class="btn primary" type="submit" form="form">ذخیره <kbd>Ctrl+Enter</kbd></button>
+    <button id="cancelBtn" class="btn ghost" type="button">انصراف</button>
+  </footer>
+</aside>
+
+<!-- ثبت نتیجه‌ی تماس -->
+<div id="modal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="mTitle" aria-hidden="true">
+  <h2 id="mTitle">ثبت نتیجه‌ی تماس</h2>
+  <div class="sub" id="mSub"></div>
+  <div class="choices" id="mChoices" role="group" aria-label="نتیجه">
+    <button class="choice" type="button" data-res="answered" aria-pressed="true">پاسخ داد</button>
+    <button class="choice" type="button" data-res="voicemail" aria-pressed="false">پیام گذاشتم</button>
+    <button class="choice" type="button" data-res="nores" aria-pressed="false">پاسخ نداد</button>
+  </div>
+  <div class="field"><label for="mNext">پیگیری بعدی</label>
+    <select id="mNext" class="input"><option value="1">فردا</option><option value="2" selected>۲ روز دیگر</option><option value="7">یک هفته دیگر</option><option value="14">دو هفته دیگر</option></select></div>
+  <footer>
+    <button id="mSave" class="btn primary" type="button">ثبت و ادامه</button>
+    <button id="mCancel" class="btn ghost" type="button">انصراف</button>
+  </footer>
+</div>
+
+<div id="toast" class="glass toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastAct" class="btn sm" type="button" hidden></button></div>
+
+<script>
+(function () {
+  "use strict";
+  const DAY = 86400000;
+  const STAGES = ["جدید", "در تماس", "پیشنهاد", "برنده"];
+  const KEY = "crm-app-v1";
+  const VIEWS = { today: "امروز", pipeline: "سرنخ‌ها", customers: "مشتری‌ها", reports: "گزارش‌ها" };
+  const $ = (id) => document.getElementById(id);
+
+  // ---------- کمکی‌ها ----------
+  const toEn = (s) => String(s || "").replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+  const fa = (n) => Number(n).toLocaleString("fa-IR");
+  const money = (n) => n ? fa(n) + " تومان" : "بدون مبلغ";
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const waNumber = (p) => "98" + p.slice(1);   // ۰۹۱۲… → ۹۸۹۱۲…
+  const JMONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
+  function g2j(gy, gm, gd) {
+    const gdm = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+    const gy2 = gm > 2 ? gy + 1 : gy;
+    let days = 355666 + 365 * gy + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + gd + gdm[gm - 1];
+    let jy = -1595 + 33 * Math.floor(days / 12053); days %= 12053;
+    jy += 4 * Math.floor(days / 1461); days %= 1461;
+    if (days > 365) { jy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+    const jm = days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+    const jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30);
+    return [jy, jm, jd];
+  }
+  const jalali = (ts) => { const d = new Date(ts); const [y, m, day] = g2j(d.getFullYear(), d.getMonth() + 1, d.getDate()); return fa(day) + " " + JMONTHS[m - 1] + " " + fa(y); };
+  const daysFromNow = (ts) => Math.ceil((ts - Date.now()) / DAY);
+
+  // ---------- داده ----------
+  function seed() {
+    const now = Date.now();
+    return { nextId: 9, lastDeleted: null, leads: [
+      { id: 1, name: "فروشگاه ماه", phone: "09121110001", source: "اینستاگرام", stage: 0, amount: 0, next: now + DAY },
+      { id: 2, name: "گالری شیراز", phone: "09121110002", source: "وب‌سایت", stage: 0, amount: 0, next: now + DAY * 3 },
+      { id: 3, name: "کافه بهار", phone: "09121110003", source: "معرفی دوستان", stage: 1, amount: 40000000, next: now - DAY * 2 },
+      { id: 4, name: "دفتر حقوقی سپهر", phone: "09121110004", source: "تماس ورودی", stage: 1, amount: 65000000, next: now },
+      { id: 5, name: "فروشگاه نور", phone: "09121110005", source: "نمایشگاه", stage: 2, amount: 90000000, next: now + DAY * 2 },
+      { id: 6, name: "شرکت آریا", phone: "09121110006", source: "معرفی دوستان", stage: 3, amount: 120000000, next: now + DAY * 7 },
+      { id: 7, name: "پروژه شمال", phone: "09121110007", source: "وب‌سایت", stage: 3, amount: 55000000, next: now + DAY * 14 },
+      { id: 8, name: "کلینیک نیلوفر", phone: "09121110008", source: "اینستاگرام", stage: 1, amount: 18000000, next: now }
+    ]};
+  }
+  let state;
+  try { state = JSON.parse(localStorage.getItem(KEY)) || seed(); } catch (e) { state = seed(); }
+  let view = "today", search = "", pendingDelete = null, editingId = null, callLead = null, callRes = "answered";
+
+  function save() { localStorage.setItem(KEY, JSON.stringify(state)); $("sync").textContent = "ذخیره شد · روی دستگاه"; }
+  const matches = (l) => { const q = toEn(search).trim().toLowerCase(); return !q || l.name.toLowerCase().includes(q) || l.phone.includes(q); };
+  const dueList = () => state.leads.filter((l) => l.stage < 3 && daysFromNow(l.next) <= 0).sort((a, b) => a.next - b.next);
+
+  // ---------- ناوبری ----------
+  function setView(v) {
+    view = v;
+    document.querySelectorAll(".nav").forEach((b) => b.setAttribute("aria-current", b.dataset.view === v ? "page" : "false"));
+    document.querySelectorAll(".view").forEach((s) => s.classList.toggle("on", s.id === "v-" + v));
+    $("pageTitle").textContent = VIEWS[v];
+    render();
+  }
+  document.querySelectorAll(".nav").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
+
+  // ---------- رندر ----------
+  function render() {
+    const due = dueList();
+    $("badgeToday").textContent = fa(due.length);
+    $("pageSub").textContent = jalali(Date.now()) + " · " + fa(state.leads.length) + " سرنخ ثبت شده";
+    if (view === "today") renderToday(due);
+    if (view === "pipeline") renderPipeline();
+    if (view === "customers") renderCustomers();
+    if (view === "reports") renderReports();
+  }
+
+  function renderToday(due) {
+    const k = $("kpisToday"); k.textContent = "";
+    const won = state.leads.filter((l) => l.stage === 3).reduce((s, l) => s + l.amount, 0);
+    const open = state.leads.filter((l) => l.stage < 3).reduce((s, l) => s + l.amount, 0);
+    [["کارهای امروز", fa(due.length), "پیگیری امروز یا عقب‌افتاده"],
+     ["سرنخ‌های باز", fa(state.leads.filter((l) => l.stage < 3).length), "در مراحل فروش"],
+     ["ارزش باز", fa(Math.round(open / 1e6)) + " م", "میلیون تومان در جریان"],
+     ["فروش ثبت‌شده", fa(Math.round(won / 1e6)) + " م", "میلیون تومان برنده"]
+    ].forEach(([l, v, s]) => { const c = el("div", "glass kpi"); c.append(el("span", "lbl", l), el("b", "", v), el("small", "", s)); k.appendChild(c); });
+
+    const list = $("todayList"); list.textContent = "";
+    if (!due.length) { list.appendChild(el("div", "glass empty", "امروز پیگیری‌ای نداری. خوب پیش می‌روی.")); return; }
+    due.forEach((l) => {
+      const d = daysFromNow(l.next);
+      const row = el("article", "glass row-item");
+      const info = el("div", "info");
+      info.append(el("div", "nm", l.name), el("div", "meta", STAGES[l.stage] + " · " + fa(l.phone) + " · " + (l.amount ? money(l.amount) : "بدون مبلغ")));
+      info.appendChild(el("div", d < 0 ? "over" : "today", d < 0 ? "عقب‌افتاده " + fa(-d) + " روز · " + jalali(l.next) : "پیگیری امروز · " + jalali(l.next)));
+      const b = el("div", "btns");
+      const call = el("a", "btn sm call", "تماس"); call.href = "tel:" + l.phone;
+      const wa = el("a", "btn sm wa", "واتساپ"); wa.href = "https://wa.me/" + waNumber(l.phone); wa.target = "_blank"; wa.rel = "noopener";
+      const res = el("button", "btn sm primary", "ثبت نتیجه"); res.type = "button"; res.addEventListener("click", () => openCall(l.id));
+      b.append(call, wa, res);
+      row.append(info, b);
+      list.appendChild(row);
+    });
+  }
+
+  function renderPipeline() {
+    const board = $("board"); board.textContent = "";
+    STAGES.forEach((name, s) => {
+      const items = state.leads.filter((l) => l.stage === s && matches(l));
+      const col = el("section", "glass col"); col.dataset.stage = s;
+      const head = el("header"); head.append(el("span", "", name), el("em", "", fa(items.length)));
+      col.appendChild(head);
+      col.addEventListener("dragover", (e) => { e.preventDefault(); col.classList.add("over-drop"); });
+      col.addEventListener("dragleave", () => col.classList.remove("over-drop"));
+      col.addEventListener("drop", (e) => { e.preventDefault(); col.classList.remove("over-drop"); const id = Number(e.dataTransfer.getData("text/plain")); if (id) moveLead(id, s); });
+      if (!items.length) col.appendChild(el("div", "empty", "سرنخی در این مرحله نیست."));
+      items.forEach((l) => col.appendChild(card(l)));
+      board.appendChild(col);
+    });
+  }
+
+  function card(l) {
+    const c = el("article", "glass card-lead"); c.tabIndex = 0; c.draggable = true; c.dataset.id = l.id;
+    const d = daysFromNow(l.next);
+    c.append(el("div", "nm", l.name), el("div", "meta", l.source + " · " + fa(l.phone)), el("div", "amt", money(l.amount)));
+    c.appendChild(el("div", d < 0 ? "fu over" : d === 0 ? "fu today" : "fu", (d < 0 ? "عقب‌افتاده" : d === 0 ? "امروز" : "پیگیری") + " · " + jalali(l.next)));
+    const row = el("div", "row");
+    const sel = el("select"); sel.setAttribute("aria-label", "تغییر مرحله " + l.name);
+    STAGES.forEach((s, i) => { const o = el("option", "", s); o.value = i; if (i === l.stage) o.selected = true; sel.appendChild(o); });
+    sel.addEventListener("change", () => moveLead(l.id, Number(sel.value)));
+    const del = el("button", "btn sm danger", "حذف"); del.type = "button"; del.setAttribute("aria-label", "حذف " + l.name);
+    del.addEventListener("click", () => askDelete(l.id, del));
+    row.append(sel, del); c.appendChild(row);
+    c.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/plain", String(l.id)); c.style.opacity = ".5"; });
+    c.addEventListener("dragend", () => { c.style.opacity = ""; });
+    c.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" && l.stage < 3) { e.preventDefault(); moveLead(l.id, l.stage + 1, true); }
+      if (e.key === "ArrowLeft" && l.stage > 0) { e.preventDefault(); moveLead(l.id, l.stage - 1, true); }
+    });
+    c.addEventListener("dblclick", () => openDrawer(l.id));
+    return c;
+  }
+
+  function renderCustomers() {
+    const body = $("custBody"); body.textContent = "";
+    state.leads.filter(matches).forEach((l) => {
+      const tr = el("tr");
+      const nm = el("td"); const link = el("a", "", l.name); link.href = "#"; link.addEventListener("click", (e) => { e.preventDefault(); openDrawer(l.id); }); nm.appendChild(link);
+      tr.append(nm, el("td", "", fa(l.phone)), el("td", "", l.source), el("td", "", STAGES[l.stage]), el("td", "", l.amount ? fa(l.amount) : "—"), el("td", "", jalali(l.next)));
+      body.appendChild(tr);
+    });
+    if (!body.children.length) { const tr = el("tr"); const td = el("td", "", "موردی پیدا نشد."); td.colSpan = 6; td.className = "empty"; tr.appendChild(td); body.appendChild(tr); }
+  }
+
+  function renderReports() {
+    const total = state.leads.length, won = state.leads.filter((l) => l.stage === 3).length;
+    const rate = total ? Math.round((won / total) * 100) : 0;
+    const k = $("kpisReports"); k.textContent = "";
+    [["کل سرنخ‌ها", fa(total), "از ابتدا"], ["نرخ تبدیل", fa(rate) + "٪", "برنده به کل"],
+     ["میانگین مبلغ برنده", fa(won ? Math.round(state.leads.filter((l) => l.stage === 3).reduce((s, l) => s + l.amount, 0) / won / 1e6) : 0) + " م", "میلیون تومان"],
+     ["پیگیری عقب‌افتاده", fa(state.leads.filter((l) => l.stage < 3 && daysFromNow(l.next) < 0).length), "نیاز به اقدام"]
+    ].forEach(([l, v, s]) => { const c = el("div", "glass kpi"); c.append(el("span", "lbl", l), el("b", "", v), el("small", "", s)); k.appendChild(c); });
+    bars($("stageBars"), STAGES.map((s, i) => [s, state.leads.filter((l) => l.stage === i).length]), total);
+    const sources = [...new Set(state.leads.map((l) => l.source))];
+    bars($("sourceBars"), sources.map((s) => [s, state.leads.filter((l) => l.source === s).length]), total);
+  }
+  function bars(host, rows, total) {
+    host.textContent = "";
+    rows.forEach(([label, n]) => {
+      const r = el("div", "bar-row");
+      const bar = el("div", "bar"); const fill = el("i"); fill.style.width = (total ? (n / total) * 100 : 0) + "%"; bar.appendChild(fill);
+      r.append(el("span", "", label), bar, el("span", "", fa(n)));
+      host.appendChild(r);
+    });
+  }
+
+  // ---------- عملیات ----------
+  function moveLead(id, stage, keepFocus) {
+    const l = state.leads.find((x) => x.id === id);
+    if (!l || l.stage === stage) return;
+    if (stage >= 2 && !l.amount) { toast("برای مرحله‌ی «" + STAGES[stage] + "» ابتدا مبلغ را وارد کن.", "ویرایش", () => openDrawer(id)); openDrawer(id, true); return; }
+    l.stage = stage; save(); render();
+    if (keepFocus) { const c = document.querySelector('[data-id="' + id + '"]'); if (c) c.focus(); }
+    toast(l.name + " به مرحله‌ی «" + STAGES[stage] + "» رفت.");
+  }
+  function askDelete(id, btn) {
+    if (pendingDelete !== id) {
+      pendingDelete = id; btn.textContent = "تأیید حذف"; btn.classList.add("confirm");
+      setTimeout(() => { if (pendingDelete === id) { pendingDelete = null; render(); } }, 3000);
+      return;
+    }
+    const idx = state.leads.findIndex((x) => x.id === id);
+    const [removed] = state.leads.splice(idx, 1);
+    state.lastDeleted = { lead: removed, index: idx }; pendingDelete = null;
+    save(); render();
+    toast(removed.name + " حذف شد.", "بازگردانی", () => {
+      const d = state.lastDeleted; if (!d) return;
+      state.leads.splice(Math.min(d.index, state.leads.length), 0, d.lead); state.lastDeleted = null;
+      save(); render(); hideToast(); toast("بازگردانی شد.");
+    }, 5000);
+  }
+
+  // ---------- کشوی سرنخ ----------
+  function openDrawer(id, requireAmount) {
+    const l = id ? state.leads.find((x) => x.id === id) : null;
+    editingId = l ? l.id : null;
+    $("dtitle").textContent = l ? "ویرایش سرنخ" : "سرنخ جدید";
+    $("name").value = l ? l.name : ""; $("phone").value = l ? l.phone : "";
+    $("source").value = l ? l.source : ""; $("stage").value = l ? String(l.stage) : "0";
+    $("amount").value = l && l.amount ? fa(l.amount) : ""; $("next").value = "2";
+    document.querySelectorAll("#form .field").forEach((f) => { f.classList.remove("bad"); f.querySelector(".err").textContent = ""; });
+    $("drawer").classList.add("on"); $("drawer").setAttribute("aria-hidden", "false"); $("scrim").classList.add("on");
+    setTimeout(() => $("name").focus(), 50);
+    if (requireAmount) { $("stage").value = "2"; $("amount").focus(); }
+  }
+  function closeDrawer() { $("drawer").classList.remove("on"); $("drawer").setAttribute("aria-hidden", "true"); $("scrim").classList.remove("on"); }
+  function setErr(f, msg) { const n = $(f); n.classList.toggle("bad", !!msg); n.querySelector(".err").textContent = msg || ""; }
+  function validate() {
+    let ok = true;
+    const name = $("name").value.trim();
+    const phone = toEn($("phone").value).replace(/[\s-]/g, "");
+    const stage = Number($("stage").value);
+    const raw = toEn($("amount").value).replace(/[,٬\s]/g, "");
+    const amount = raw ? Number(raw) : 0;
+    if (name.length < 2) { setErr("f-name", "نام را حداقل ۲ حرف وارد کن."); ok = false; } else setErr("f-name", "");
+    if (!/^09\d{9}$/.test(phone)) { setErr("f-phone", "شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود."); ok = false; } else setErr("f-phone", "");
+    if (!$("source").value) { setErr("f-source", "منبع آشنایی را انتخاب کن."); ok = false; } else setErr("f-source", "");
+    if (stage >= 2 && !amount) { setErr("f-amount", "برای این مرحله مبلغ لازم است."); ok = false; }
+    else if (raw && (!/^\d+$/.test(raw) || amount <= 0)) { setErr("f-amount", "مبلغ فقط عدد مثبت باشد."); ok = false; }
+    else setErr("f-amount", "");
+    return ok ? { name, phone, stage, amount, source: $("source").value, days: Number($("next").value) } : null;
+  }
+  $("form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const v = validate(); if (!v) return;
+    const next = Date.now() + v.days * DAY;
+    let t;
+    if (editingId) { t = state.leads.find((x) => x.id === editingId); Object.assign(t, { name: v.name, phone: v.phone, stage: v.stage, amount: v.amount, source: v.source, next }); }
+    else { t = { id: state.nextId++, name: v.name, phone: v.phone, stage: v.stage, amount: v.amount, source: v.source, next }; state.leads.push(t); }
+    save(); closeDrawer(); render(); toast(editingId ? "تغییرات ذخیره شد." : "سرنخ ثبت شد.");
+  });
+  $("form").addEventListener("keydown", (e) => { if (e.ctrlKey && e.key === "Enter") { e.preventDefault(); $("form").requestSubmit(); } });
+  $("newBtn").addEventListener("click", () => openDrawer(null));
+  $("closeBtn").addEventListener("click", closeDrawer);
+  $("cancelBtn").addEventListener("click", closeDrawer);
+  $("scrim").addEventListener("click", () => { closeDrawer(); closeCall(); });
+
+  // ---------- ثبت نتیجه‌ی تماس ----------
+  function openCall(id) {
+    callLead = state.leads.find((x) => x.id === id); if (!callLead) return;
+    callRes = "answered";
+    $("mSub").textContent = callLead.name + " · " + fa(callLead.phone);
+    document.querySelectorAll(".choice").forEach((b) => b.setAttribute("aria-pressed", b.dataset.res === callRes ? "true" : "false"));
+    $("mNext").value = "2";
+    $("modal").classList.add("on"); $("modal").setAttribute("aria-hidden", "false"); $("scrim").classList.add("on");
+  }
+  function closeCall() { $("modal").classList.remove("on"); $("modal").setAttribute("aria-hidden", "true"); $("scrim").classList.remove("on"); }
+  document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
+    callRes = b.dataset.res;
+    document.querySelectorAll(".choice").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
+  }));
+  $("mSave").addEventListener("click", () => {
+    if (!callLead) return;
+    const days = Number($("mNext").value);
+    callLead.next = Date.now() + days * DAY;
+    if (callRes === "answered" && callLead.stage === 0) callLead.stage = 1;
+    const label = { answered: "پاسخ داد", voicemail: "پیام گذاشته شد", nores: "پاسخ نداد" }[callRes];
+    save(); closeCall(); render();
+    toast(callLead.name + ": " + label + " · پیگیری " + fa(days) + " روز بعد");
+    callLead = null;
+  });
+  $("mCancel").addEventListener("click", closeCall);
+
+  // ---------- پیام کوتاه ----------
+  let toastTimer = null;
+  function toast(msg, actLabel, actFn, ms) {
+    $("toastMsg").textContent = msg;
+    const b = $("toastAct");
+    if (actLabel) { b.hidden = false; b.textContent = actLabel; b.onclick = () => actFn(); } else { b.hidden = true; b.onclick = null; }
+    $("toast").classList.add("on"); clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, ms || 3200);
+  }
+  function hideToast() { $("toast").classList.remove("on"); }
+
+  // ---------- جستجو و میان‌برها ----------
+  $("q").addEventListener("input", (e) => { search = e.target.value; render(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { closeDrawer(); closeCall(); return; }
+    if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+    if (e.key === "/") { e.preventDefault(); $("q").focus(); }
+    if (e.key === "n" || e.key === "N") { e.preventDefault(); openDrawer(null); }
+  });
+
+  $("sync").textContent = "ذخیره روی دستگاه";
+  setView("today");
+})();
+</script>
+</body>
+</html>
