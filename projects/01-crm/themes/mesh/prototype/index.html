@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>نمونه‌ی آزمایشی CRM · یخ قطبی</title>
 <style>
-@font-face { font-family: "Vazir"; src: url("../fonts/Vazirmatn-Regular.ttf"); font-weight: 400; }
-@font-face { font-family: "Vazir"; src: url("../fonts/Vazirmatn-Medium.ttf"); font-weight: 500; }
-@font-face { font-family: "Vazir"; src: url("../fonts/Vazirmatn-SemiBold.ttf"); font-weight: 600; }
-@font-face { font-family: "Vazir"; src: url("../fonts/Vazirmatn-Bold.ttf"); font-weight: 700; }
+@font-face { font-family: "Shoor"; src: url("../fonts/shoor/ShoorRounded-Regular.ttf"); font-weight: 400; }
+@font-face { font-family: "Shoor"; src: url("../fonts/shoor/ShoorRounded-Medium.ttf"); font-weight: 500; }
+@font-face { font-family: "Shoor"; src: url("../fonts/shoor/ShoorRounded-SemiBold.ttf"); font-weight: 600; }
+@font-face { font-family: "Shoor"; src: url("../fonts/shoor/ShoorRounded-Bold.ttf"); font-weight: 700; }
 :root {
   --ink: #17303f; --muted: #637f8f; --accent: #4a93c9; --accent-d: #357bb0;
   --danger: #b42318; --ok: #15803d; --warn: #b45309;
@@ -17,7 +17,7 @@
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: "Vazir", system-ui, sans-serif; color: var(--ink); min-height: 100vh;
+  font-family: "Shoor", "Vazir", system-ui, sans-serif; color: var(--ink); min-height: 100vh;
   background-color: #fbfdfe;
   background-image:
     radial-gradient(at 10% 10%, #e8f4fb 0px, transparent 55%),
@@ -223,6 +223,21 @@ kbd { font-family: inherit; font-size: 12px; background: rgba(255,255,255,.35); 
   const money = (n) => n ? fa(n) + " تومان" : "بدون مبلغ";
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
+  // ---------- تقویم شمسی ----------
+  const JMONTHS = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
+  function g2j(gy, gm, gd) {
+    const gdm = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+    const gy2 = gm > 2 ? gy + 1 : gy;
+    let days = 355666 + 365 * gy + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + gd + gdm[gm - 1];
+    let jy = -1595 + 33 * Math.floor(days / 12053); days %= 12053;
+    jy += 4 * Math.floor(days / 1461); days %= 1461;
+    if (days > 365) { jy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+    const jm = days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
+    const jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30);
+    return [jy, jm, jd];
+  }
+  const jalaliStr = (ts) => { const d = new Date(ts); const [y, m, day] = g2j(d.getFullYear(), d.getMonth() + 1, d.getDate()); return fa(day) + " " + JMONTHS[m - 1] + " " + fa(y); };
+
   // ---------- state ----------
   function seed() {
     const now = Date.now();
@@ -251,9 +266,10 @@ kbd { font-family: inherit; font-size: 12px; background: rgba(255,255,255,.35); 
   // ---------- render ----------
   function dueInfo(l) {
     const days = Math.ceil((l.next - Date.now()) / DAY);
-    if (days < 0) return { text: "عقب‌افتاده " + fa(-days) + " روز", cls: "over" };
-    if (days === 0) return { text: "پیگیری امروز", cls: "today" };
-    return { text: "پیگیری " + fa(days) + " روز دیگر", cls: "" };
+    const date = jalaliStr(l.next);
+    if (days < 0) return { text: "عقب‌افتاده " + fa(-days) + " روز · " + date, cls: "over" };
+    if (days === 0) return { text: "پیگیری امروز · " + date, cls: "today" };
+    return { text: "پیگیری " + fa(days) + " روز دیگر · " + date, cls: "" };
   }
 
   function card(l) {
