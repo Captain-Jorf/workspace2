@@ -261,8 +261,7 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
         <button class="chip" type="button" data-filter="today" aria-pressed="false">امروز</button>
         <button class="chip" type="button" data-filter="overdue" aria-pressed="false">عقب‌افتاده</button>
         <button class="chip" type="button" data-filter="open" aria-pressed="false">باز</button>
-        <button class="chip" type="button" data-filter="won" aria-pressed="false">برنده‌ها</button>
-        <button class="chip" type="button" id="resetFilter">پاک کردن فیلتر</button>
+        <button class="chip" type="button" data-filter="won" aria-pressed="false">انجام‌شده‌ها</button>
       </div>
     </header>
 
@@ -550,7 +549,6 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
     render();
   }
   document.querySelectorAll(".chip[data-filter]").forEach((c) => c.addEventListener("click", () => setFilter(c.dataset.filter)));
-  $("resetFilter").addEventListener("click", () => { search = ""; $("q").value = ""; setFilter("all"); });
   $("q").addEventListener("input", (e) => { search = e.target.value; render(); });
   function setCollapsed(c) {
     st.ui.collapsed = c; $("shell").classList.toggle("collapsed", c);
