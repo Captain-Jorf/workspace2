@@ -91,15 +91,15 @@ button { font: inherit; color: inherit; }
 
   <section class="glass done" id="done" aria-live="polite">
     <h2>کارهای امروز تمام شد</h2>
-    <p>همه‌ی پیگیری‌های امروز ثبت شدند.</p>
+    <p>همه‌ی پیگیری‌های امروز ثبت شدند. اگر داده‌ای نمی‌بینی، ابتدا در برنامه‌ی اصلی یک کسب‌وکار دمو انتخاب کن.</p>
   </section>
-  <div class="note">این نمونه با داده‌ی برنامه‌ی اصلی (کلید crm-app-v1) همگام است.</div>
+  <div class="note">این نمونه با داده‌ی برنامه‌ی اصلی (کلید crm-v2) همگام است و فقط کسب‌وکار انتخاب‌شده را نشان می‌دهد.</div>
 </div>
 
 <script>
 (function () {
   "use strict";
-  const DAY = 86400000, KEY = "crm-app-v1";
+  const DAY = 86400000, KEY = "crm-v2";
   const STAGES = ["جدید", "در تماس", "پیشنهاد", "برنده"];
   const $ = (id) => document.getElementById(id);
   const fa = (n) => Number(n).toLocaleString("fa-IR");
@@ -108,17 +108,9 @@ button { font: inherit; color: inherit; }
 
   let state;
   try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) { state = null; }
-  if (!state || !Array.isArray(state.leads)) {
-    const now = Date.now();
-    state = { nextId: 9, lastDeleted: null, leads: [
-      { id: 3, name: "کافه بهار", phone: "09121110003", source: "معرفی دوستان", stage: 1, amount: 40000000, next: now - DAY * 2 },
-      { id: 4, name: "دفتر حقوقی سپهر", phone: "09121110004", source: "تماس ورودی", stage: 1, amount: 65000000, next: now },
-      { id: 8, name: "کلینیک نیلوفر", phone: "09121110008", source: "اینستاگرام", stage: 1, amount: 18000000, next: now },
-      { id: 1, name: "فروشگاه ماه", phone: "09121110001", source: "اینستاگرام", stage: 0, amount: 0, next: now + DAY }
-    ]};
-  }
+  if (!state || !Array.isArray(state.leads)) state = { business: null, leads: [] };
 
-  const todo = () => state.leads.filter((l) => l.stage < 3 && Math.ceil((l.next - Date.now()) / DAY) <= 0).sort((a, b) => a.next - b.next);
+  const todo = () => state.leads.filter((l) => l.business === state.business && l.stage < 3 && Math.ceil((l.next - Date.now()) / DAY) <= 0).sort((a, b) => a.next - b.next);
   let queue = todo(), idx = 0, result = "answered", days = 2, total = queue.length;
 
   function save() { localStorage.setItem(KEY, JSON.stringify(state)); }
