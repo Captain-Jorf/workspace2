@@ -4,238 +4,27 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CRM ساده · برنامه‌ی دمو</title>
-<style>
-@font-face { font-family: "Shoor"; src: url("../themes/mesh/fonts/shoor/ShoorRounded-Regular.ttf"); font-weight: 400; }
-@font-face { font-family: "Shoor"; src: url("../themes/mesh/fonts/shoor/ShoorRounded-Medium.ttf"); font-weight: 500; }
-@font-face { font-family: "Shoor"; src: url("../themes/mesh/fonts/shoor/ShoorRounded-SemiBold.ttf"); font-weight: 600; }
-@font-face { font-family: "Shoor"; src: url("../themes/mesh/fonts/shoor/ShoorRounded-Bold.ttf"); font-weight: 700; }
-:root {
-  --ink:#17303f; --muted:#637f8f; --accent:#4a93c9; --accent-d:#357bb0;
-  --danger:#b42318; --ok:#15803d; --warn:#b45309;
-  --line:rgba(255,255,255,.95); --glass:rgba(255,255,255,.45);
-  --shadow:0 10px 30px rgba(20,60,100,.08);
-  --side-w: 230px;
-}
-* { box-sizing:border-box; margin:0; padding:0; }
-body { font-family:"Shoor","Vazir",system-ui,sans-serif; color:var(--ink); min-height:100vh; padding-bottom:64px;
-  background-color:#fbfdfe;
-  background-image:
-    radial-gradient(at 10% 10%, #e8f4fb 0px, transparent 55%),
-    radial-gradient(at 90% 14%, #f4fafd 0px, transparent 55%),
-    radial-gradient(at 78% 90%, #e2eef9 0px, transparent 55%),
-    radial-gradient(at 16% 88%, #e6f6f9 0px, transparent 55%);
-  background-attachment:fixed; }
-button,input,select,textarea { font:inherit; color:inherit; }
-a { color:inherit; }
-[hidden] { display:none !important; }
-:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-.glass { background:var(--glass); border:1px solid var(--line); border-radius:22px;
-  backdrop-filter:blur(26px) saturate(140%); -webkit-backdrop-filter:blur(26px) saturate(140%);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.8), var(--shadow); }
-
-/* ---------- شروع: انتخاب کسب‌وکار ---------- */
-#start { min-height:100vh; padding:40px 20px; display:flex; flex-direction:column; align-items:center; gap:22px; }
-#start h1 { font-size:30px; text-align:center; }
-#start .lead { color:var(--muted); text-align:center; max-width:640px; line-height:1.9; }
-.biz-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:16px; width:min(1100px,100%); }
-.biz { padding:20px; display:flex; flex-direction:column; gap:10px; }
-.biz h2 { font-size:19px; }
-.biz p { color:var(--muted); font-size:14px; line-height:1.8; }
-.biz ul { padding-inline-start:18px; color:var(--ink); font-size:14px; line-height:1.9; flex:1; }
-.biz .btn { margin-top:6px; }
-
-/* ---------- پوسته ---------- */
-.shell { display:grid; grid-template-columns:var(--side-w) 1fr; gap:20px; padding:20px; min-height:100vh; transition:grid-template-columns .2s; }
-.shell.collapsed { grid-template-columns:76px 1fr; }
-.side { z-index:6; padding:18px 12px; display:flex; flex-direction:column; gap:6px; align-self:start; position:sticky; top:20px; }
-.logo { font-weight:700; font-size:20px; padding:6px 10px 14px; white-space:nowrap; overflow:hidden; }
-.logo span { color:var(--accent); }
-.nav { display:flex; align-items:center; gap:10px; text-align:start; background:none; border:0; padding:11px 12px; border-radius:14px; color:var(--muted); cursor:pointer; font-weight:500; white-space:nowrap; }
-.nav:hover, .nav[aria-current="page"] { background:rgba(255,255,255,.7); color:var(--ink); box-shadow:inset 0 0 0 1px var(--line); }
-.nav[aria-current="page"] { color:var(--accent-d); }
-.nav .ic { width:24px; text-align:center; font-size:16px; flex-shrink:0; }
-.nav .badge { margin-inline-start:auto; }
-.shell.collapsed .label, .shell.collapsed .logo span, .shell.collapsed .logo .txt { display:none; }
-.shell.collapsed .nav { justify-content:center; padding:11px 0; }
-.shell.collapsed .nav .badge { position:absolute; transform:translate(10px,-10px); }
-.shell.collapsed .nav { position:relative; }
-.side .sep { height:1px; background:rgba(23,48,63,.08); margin:8px 6px; }
-.badge { font-size:12px; background:var(--danger); color:#fff; border-radius:999px; padding:1px 8px; min-width:22px; text-align:center; }
-
-main { display:flex; flex-direction:column; gap:16px; min-width:0; }
-.top { position:relative; z-index:6; padding:16px 18px; display:flex; flex-direction:column; gap:12px; }
-.top-row { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-.title-box { display:flex; align-items:center; gap:12px; min-width:0; }
-.title-box h1 { font-size:24px; font-weight:700; white-space:nowrap; }
-.title-box p { color:var(--muted); font-size:13px; margin-top:2px; }
-.actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-.filters { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-.chip { height:34px; padding:0 14px; border-radius:999px; border:1px solid var(--line); background:rgba(255,255,255,.55); cursor:pointer; font-size:14px; font-weight:500; }
-.chip[aria-pressed="true"] { background:var(--ink); color:#fff; border-color:var(--ink); }
-.input { height:42px; padding:0 14px; border-radius:14px; border:1px solid var(--line); background:rgba(255,255,255,.7); outline:none; min-width:0; }
-.input.search { min-width:220px; }
-.input.area { height:auto; min-height:70px; padding:10px 14px; resize:vertical; }
-.pill { font-size:13px; color:var(--ok); background:rgba(255,255,255,.7); border:1px solid var(--line); border-radius:999px; padding:7px 12px; white-space:nowrap; }
-kbd { font-family:inherit; font-size:11px; background:rgba(255,255,255,.4); border-radius:6px; padding:1px 5px; margin-inline-start:4px; }
-
-.btn { height:40px; padding:0 14px; border-radius:14px; border:1px solid var(--line); cursor:pointer; font-weight:600; font-size:14px; background:rgba(255,255,255,.65); text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:6px; white-space:nowrap; transition:transform .08s, background .15s; }
-.btn:hover { background:rgba(255,255,255,.95); }
-.btn:active { transform:scale(.98); }
-.btn:disabled { opacity:.45; cursor:not-allowed; }
-.btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; box-shadow:0 6px 16px rgba(74,147,201,.3); }
-.btn.primary:hover { background:var(--accent-d); }
-.btn.ghost { background:transparent; border-color:transparent; }
-.btn.danger { background:transparent; border-color:transparent; color:var(--danger); }
-.btn.danger.confirm { background:var(--danger); color:#fff; border-color:var(--danger); }
-.btn.wa { color:var(--ok); }
-.btn.call { color:var(--accent-d); }
-.btn.sm { height:32px; padding:0 10px; border-radius:11px; font-size:13px; }
-.btn.lg { height:48px; padding:0 22px; font-size:16px; border-radius:16px; }
-.icon { width:38px; height:38px; border-radius:50%; border:1px solid var(--line); background:rgba(255,255,255,.65); cursor:pointer; font-size:15px; display:inline-flex; align-items:center; justify-content:center; }
-.avatar { width:38px; height:38px; border-radius:50%; background:var(--accent); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-weight:700; cursor:pointer; border:0; }
-
-.view { display:none; flex-direction:column; gap:16px; }
-.view.on { display:flex; }
-.kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
-.kpi { padding:16px 18px; display:flex; flex-direction:column; gap:4px; }
-.kpi .lbl { color:var(--muted); font-size:13px; }
-.kpi b { font-size:26px; font-weight:700; }
-.kpi small { color:var(--muted); font-size:12px; }
-.section-title { font-weight:700; font-size:17px; margin-top:4px; }
-.list { display:flex; flex-direction:column; gap:10px; }
-.row-item { padding:14px 16px; display:flex; gap:14px; align-items:center; justify-content:space-between; flex-wrap:wrap; border-radius:18px; cursor:pointer; }
-.row-item .info { display:flex; flex-direction:column; gap:3px; min-width:200px; flex:1; }
-.row-item .nm { font-weight:600; }
-.row-item .meta { color:var(--muted); font-size:13px; }
-.row-item .btns { display:flex; gap:6px; flex-wrap:wrap; }
-.over { color:var(--danger); font-weight:600; font-size:13px; }
-.today { color:var(--warn); font-weight:600; font-size:13px; }
-.empty { color:var(--muted); font-size:14px; text-align:center; padding:22px 8px; }
-
-.board { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; align-items:start; }
-.col { padding:12px; display:flex; flex-direction:column; gap:10px; min-height:240px; transition:background .15s; }
-.col.over-drop { background:rgba(255,255,255,.7); }
-.col header { display:flex; justify-content:space-between; align-items:center; padding:4px 6px; font-weight:600; }
-.col header em { font-style:normal; font-size:13px; color:var(--muted); background:rgba(255,255,255,.7); border:1px solid var(--line); border-radius:999px; padding:2px 10px; }
-.card-lead { padding:14px; display:flex; flex-direction:column; gap:6px; cursor:grab; border-radius:18px; }
-.card-lead:active { cursor:grabbing; }
-.card-lead .nm { font-weight:600; cursor:pointer; }
-.card-lead .meta { color:var(--muted); font-size:13px; }
-.card-lead .amt { font-weight:600; font-size:14px; }
-.card-lead .row { display:flex; gap:6px; align-items:center; justify-content:space-between; margin-top:4px; flex-wrap:wrap; }
-.card-lead select { height:32px; border-radius:12px; border:1px solid var(--line); background:rgba(255,255,255,.7); padding:0 8px; font-size:13px; }
-.flash { animation:flash 1.2s ease; }
-@keyframes flash { 0% { box-shadow:0 0 0 4px rgba(74,147,201,.5); } 100% { box-shadow:none; } }
-
-.table-wrap { padding:8px; overflow-x:auto; }
-table { width:100%; border-collapse:collapse; font-size:14px; min-width:640px; }
-th,td { padding:12px 10px; text-align:start; border-bottom:1px solid rgba(23,48,63,.07); }
-th { color:var(--muted); font-weight:600; font-size:13px; }
-tbody tr { cursor:pointer; }
-tbody tr:hover { background:rgba(255,255,255,.5); }
-.ltr { direction:ltr; unicode-bidi:isolate; display:inline-block; }
-
-.two { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-.bars { padding:18px; display:flex; flex-direction:column; gap:12px; }
-.bar-row { display:grid; grid-template-columns:120px 1fr 50px; gap:10px; align-items:center; font-size:14px; }
-.bar { height:12px; border-radius:999px; background:rgba(255,255,255,.7); overflow:hidden; border:1px solid var(--line); }
-.bar i { display:block; height:100%; background:var(--accent); border-radius:999px; }
-
-/* ---------- کشو و پنجره ---------- */
-.scrim { position:fixed; inset:0; background:rgba(23,48,63,.18); opacity:0; pointer-events:none; transition:opacity .2s; z-index:5; }
-.scrim.on { opacity:1; pointer-events:auto; }
-.drawer { visibility:hidden; transition:transform .25s ease, visibility .25s; position:fixed; top:16px; bottom:16px; left:16px; width:min(460px, calc(100% - 32px)); padding:22px; transform:translateX(-120%); transition:transform .25s ease; display:flex; flex-direction:column; z-index:10; }
-.drawer.on { transform:translateX(0); visibility:visible; }
-.drawer header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
-.drawer h2 { font-size:19px; }
-.drawer form { display:flex; flex-direction:column; gap:12px; overflow:auto; flex:1; padding:2px; }
-.field { display:flex; flex-direction:column; gap:5px; }
-.field label { font-size:14px; font-weight:500; }
-.field .input { width:100%; }
-.field .hint { font-size:12px; color:var(--muted); }
-.field .err { font-size:13px; color:var(--danger); }
-.field.bad .input { border-color:var(--danger); }
-.drawer footer { display:flex; gap:10px; padding-top:12px; border-top:1px solid rgba(23,48,63,.08); margin-top:6px; }
-
-.modal { visibility:hidden; position:fixed; top:50%; left:50%; transform:translate(-50%,-46%); width:min(520px, calc(100% - 32px)); max-height:calc(100vh - 40px); overflow:auto; padding:22px; z-index:12; opacity:0; pointer-events:none; transition:all .2s; }
-.modal.on { visibility:visible; opacity:1; pointer-events:auto; transform:translate(-50%,-50%); }
-.modal.wide { width:min(820px, calc(100% - 32px)); }
-.modal header { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:6px; }
-.modal h2 { font-size:21px; }
-.modal .sub { color:var(--muted); font-size:14px; margin-bottom:14px; }
-.modal h3 { font-size:15px; margin:16px 0 8px; }
-.modal footer { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
-.choices { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; }
-.choice { padding:12px 6px; border-radius:14px; border:1px solid var(--line); background:rgba(255,255,255,.6); cursor:pointer; font-weight:600; font-size:14px; }
-.choice[aria-pressed="true"] { background:var(--accent); color:#fff; border-color:var(--accent); }
-.kv { display:grid; grid-template-columns:1fr 1fr; gap:8px 16px; }
-.kv div { display:flex; flex-direction:column; gap:2px; padding:8px 10px; background:rgba(255,255,255,.5); border-radius:12px; border:1px solid var(--line); }
-.kv span { font-size:12px; color:var(--muted); }
-.kv b { font-weight:600; font-size:14px; }
-.stats { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
-.stats div { padding:12px; border-radius:16px; background:rgba(255,255,255,.55); border:1px solid var(--line); text-align:center; }
-.stats b { display:block; font-size:20px; }
-.stats span { font-size:12px; color:var(--muted); }
-.timeline { display:flex; flex-direction:column; gap:8px; max-height:220px; overflow:auto; }
-.tl { padding:9px 12px; border-radius:14px; background:rgba(255,255,255,.5); border:1px solid var(--line); font-size:14px; display:flex; justify-content:space-between; gap:10px; }
-.tl small { color:var(--muted); white-space:nowrap; }
-
-.toast { position:fixed; bottom:56px; left:50%; transform:translateX(-50%); padding:12px 16px; display:flex; gap:14px; align-items:center; z-index:20; opacity:0; transition:opacity .2s; pointer-events:none; max-width:92vw; }
-.toast.on { opacity:1; pointer-events:auto; }
-
-/* متن ثابت پایین صفحه */
-.fixed-note { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); font-size:13px; color:var(--muted); background:rgba(255,255,255,.6); border:1px solid var(--line); border-radius:999px; padding:6px 16px; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); white-space:nowrap; z-index:3; }
-
-@media (max-width:1100px) {
-  .kpis { grid-template-columns:repeat(2,1fr); }
-  .board { grid-template-columns:repeat(4,minmax(240px,1fr)); overflow-x:auto; }
-}
-@media (max-width:760px) {
-  .shell, .shell.collapsed { grid-template-columns:1fr; padding:10px; }
-  .side { flex-direction:row; flex-wrap:wrap; position:static; padding:8px; }
-  .logo { padding:4px 6px; }
-  .shell.collapsed .label { display:inline; }
-  .shell.collapsed .logo span, .shell.collapsed .logo .txt { display:inline; }
-  .input.search { min-width:0; width:100%; }
-  .two { grid-template-columns:1fr; }
-  .bar-row { grid-template-columns:90px 1fr 40px; }
-  .stats { grid-template-columns:repeat(2,1fr); }
-  .kv { grid-template-columns:1fr; }
-  .fixed-note { white-space:normal; text-align:center; width:92%; border-radius:16px; }
-}
-@media (prefers-reduced-motion:reduce) { * { transition:none !important; animation:none !important; } }
-.auth-box { display:flex; flex-direction:column; gap:10px; padding:14px; border-radius:16px; background:rgba(255,255,255,.45); border:1px solid var(--line); margin-bottom:6px; }
-.auth-box form { display:flex; flex-direction:column; gap:10px; }
-.auth-tabs { display:flex; gap:8px; }
-.row-head { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
-.notes-box { padding:12px 14px; border-radius:14px; background:rgba(255,255,255,.5); border:1px solid var(--line); font-size:14px; line-height:1.9; white-space:pre-wrap; min-height:44px; }
-.st { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; background:rgba(255,255,255,.7); border:1px solid var(--line); white-space:nowrap; }
-.st.overdue { color:var(--danger); border-color:var(--danger); }
-.st.paid { color:#2f7d4f; }
-.st.draft { color:var(--muted); }
-</style>
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
-<!-- ============ صفحه‌ی شروع: انتخاب کسب‌وکار دمو ============ -->
 <section id="start" aria-label="انتخاب کسب‌وکار دمو" hidden>
-  <h1>کدام کسب‌وکار را در دمو ببینی؟</h1>
-  <p class="lead">هر کسب‌وکار داده‌ی ساختگی، مراحل فروش و فیلدهای اختصاصی خودش را دارد. بعد از انتخاب، می‌توانی بعداً از دکمه‌ی «تغییر کسب‌وکار» عوضش کنی.</p>
+  <h1>کدام کسب‌وکار دمو را امتحان می‌کنی؟</h1>
+  <p class="lead">هر کسب‌وکار داده‌ی ساختگی و فیلدهای مخصوص خودش را دارد. داده‌ها فقط روی همین دستگاه ذخیره می‌شوند.</p>
   <div class="biz-grid" id="bizGrid"></div>
 </section>
 
-<!-- ============ پوسته‌ی برنامه ============ -->
 <div class="shell" id="shell" hidden>
-  <aside class="glass side" aria-label="ناوبری اصلی">
-    <div class="logo">CRM <span>ساده</span></div>
+  <aside class="glass side" aria-label="منوی اصلی">
+    <div class="logo"><span>●</span> <span class="txt">CRM</span> ساده</div>
     <button class="nav" type="button" data-view="today" aria-current="page"><span class="ic">◉</span><span class="label">امروز</span><span class="badge" id="badgeToday">۰</span></button>
     <button class="nav" type="button" data-view="notices"><span class="ic">✉</span><span class="label">اطلاعیه‌ها</span></button>
     <button class="nav" type="button" data-view="customers"><span class="ic">☷</span><span class="label">مشتری‌ها</span></button>
     <button class="nav" type="button" data-view="invoices"><span class="ic">▤</span><span class="label">فاکتورها</span></button>
+    <button class="nav" type="button" data-view="archive"><span class="ic">▣</span><span class="label">بایگانی</span></button>
     <button class="nav" type="button" data-view="reports"><span class="ic">▥</span><span class="label">گزارش‌ها</span></button>
     <div class="sep"></div>
-    <button class="nav" type="button" id="sideProfile"><span class="ic">☺</span><span class="label">پروفایل</span></button>
-    <button class="nav" type="button" id="sideExport"><span class="ic">⇩</span><span class="label">خروجی CSV</span></button>
+    <button class="nav" type="button" id="sideSettings"><span class="ic">⚙</span><span class="label">تنظیمات</span></button>
     <button class="nav" type="button" id="sideSwitch"><span class="ic">⇄</span><span class="label">تغییر کسب‌وکار</span></button>
   </aside>
 
@@ -254,9 +43,8 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
           <span class="pill" id="sync">ذخیره روی دستگاه</span>
           <button class="btn primary" id="newNotice" type="button">اطلاعیه‌ی جدید <kbd>N</kbd></button>
           <button class="btn" id="newCustomer" type="button">مشتری جدید</button>
-          <button class="btn" id="exportBtn" type="button">خروجی CSV</button>
-          <button class="btn" id="switchBtn" type="button">تغییر کسب‌وکار</button>
-          <button class="avatar" id="profileBtn" type="button" aria-label="پروفایل" title="پروفایل">م</button>
+          <button class="btn" id="settingsBtn" type="button">تنظیمات</button>
+          <button class="icon theme-btn" id="themeBtn" type="button" aria-label="تغییر حالت شب و روز" title="حالت شب / روز">☾</button>
         </div>
       </div>
       <div class="filters" role="group" aria-label="فیلتر سریع">
@@ -268,32 +56,63 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
       </div>
     </header>
 
-    <!-- امروز -->
-    <section class="view on" id="v-today" aria-label="کارهای امروز">
+    <section class="view on" id="v-today" aria-label="امروز">
       <div class="kpis" id="kpisToday"></div>
-      <div class="section-title">پیگیری‌های امروز و عقب‌افتاده</div>
+      <div class="row-head">
+        <div class="section-title">پیگیری‌های امروز و عقب‌افتاده</div>
+        <button class="btn" id="icsBtn" type="button">خروجی تقویم (ICS)</button>
+      </div>
       <div class="list" id="todayList"></div>
     </section>
 
-    <!-- اطلاعیه‌ها -->
     <section class="view" id="v-notices" aria-label="اطلاعیه‌ها">
+      <div class="glass bulk" id="noticeBulk" hidden>
+        <span class="count" id="noticeCount"></span>
+        <select class="input" id="bulkStage" style="width:auto;height:36px" aria-label="انتقال به مرحله"></select>
+        <button class="btn sm" id="bulkRemind" type="button">یادآوری فردا</button>
+        <button class="btn sm" id="bulkArchive" type="button">بایگانی</button>
+        <button class="btn sm danger" id="bulkDelete" type="button">حذف</button>
+        <button class="btn sm ghost" id="bulkClear" type="button">لغو انتخاب</button>
+      </div>
       <div class="board" id="board"></div>
     </section>
 
-    <!-- مشتری‌ها -->
     <section class="view" id="v-customers" aria-label="مشتری‌ها">
+      <div class="row-head">
+        <div class="tools">
+          <button class="btn" id="importBtn" type="button">وارد کردن CSV</button>
+          <button class="btn" id="mergeBtn" type="button">ادغام مشتری‌های تکراری</button>
+          <button class="btn" id="colsBtn" type="button">ستون‌های جدول</button>
+          <button class="btn" id="custCsv" type="button">خروجی CSV</button>
+        </div>
+      </div>
+      <div class="glass bulk" id="custBulk" hidden>
+        <span class="count" id="custCount"></span>
+        <button class="btn sm" id="custArchive" type="button">بایگانی انتخاب‌شده‌ها</button>
+        <button class="btn sm ghost" id="custClear" type="button">لغو انتخاب</button>
+      </div>
       <div class="glass table-wrap">
         <table>
-          <thead><tr><th>نام</th><th>موبایل</th><th>منبع</th><th>مرحله</th><th>مبلغ</th><th>پیگیری بعدی</th></tr></thead>
+          <thead><tr id="custHead"></tr></thead>
           <tbody id="custBody"></tbody>
         </table>
       </div>
     </section>
 
-    <!-- فاکتورها -->
     <section class="view" id="v-invoices" aria-label="فاکتورها">
       <div class="kpis" id="kpisInv"></div>
-      <div class="row-head"><div class="section-title">فاکتورهای این کسب‌وکار</div><button class="btn primary" id="newInv" type="button">فاکتور جدید</button></div>
+      <div class="row-head">
+        <div class="tools">
+          <button class="btn primary" id="newInv" type="button">فاکتور جدید</button>
+          <button class="btn" id="invCsv" type="button">خروجی CSV فاکتورها</button>
+        </div>
+        <select class="input" id="invRange" style="width:auto;height:38px" aria-label="بازه‌ی زمانی">
+          <option value="0">همه‌ی زمان‌ها</option>
+          <option value="7">۷ روز اخیر</option>
+          <option value="30">۳۰ روز اخیر</option>
+          <option value="90">۹۰ روز اخیر</option>
+        </select>
+      </div>
       <div class="glass table-wrap">
         <table>
           <thead><tr><th>شماره</th><th>مشتری</th><th>تاریخ صدور</th><th>سررسید</th><th>مبلغ</th><th>وضعیت</th><th>عملیات</th></tr></thead>
@@ -302,8 +121,21 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
       </div>
     </section>
 
-    <!-- گزارش‌ها -->
+    <section class="view" id="v-archive" aria-label="بایگانی">
+      <div class="section-title">اطلاعیه‌های بایگانی‌شده</div>
+      <div class="list" id="archList"></div>
+    </section>
+
     <section class="view" id="v-reports" aria-label="گزارش‌ها">
+      <div class="row-head">
+        <select class="input" id="reportRange" style="width:auto;height:38px" aria-label="بازه‌ی زمانی گزارش">
+          <option value="0">همه‌ی زمان‌ها</option>
+          <option value="7">۷ روز اخیر</option>
+          <option value="30">۳۰ روز اخیر</option>
+          <option value="90">۹۰ روز اخیر</option>
+        </select>
+        <button class="btn" id="reportPdf" type="button">خروجی PDF گزارش</button>
+      </div>
       <div class="kpis" id="kpisReports"></div>
       <div class="two">
         <div class="glass bars"><div class="section-title">اطلاعیه‌ها به تفکیک مرحله</div><div id="stageBars"></div></div>
@@ -315,9 +147,8 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
 </div>
 
 <div class="fixed-note">نمونه‌ی کار با داده‌های ساختگی یک برنامه مدیریت مشتری</div>
-
-<!-- کشوی اطلاعیه -->
 <div id="scrim" class="scrim"></div>
+
 <aside id="drawer" class="glass drawer" aria-hidden="true" aria-labelledby="dtitle">
   <header><h2 id="dtitle">اطلاعیه‌ی جدید</h2><button id="closeBtn" class="icon" type="button" aria-label="بستن">✕</button></header>
   <form id="form" novalidate>
@@ -330,6 +161,7 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
     <div class="field" id="f-amount"><label for="amount">مبلغ (تومان)</label><input id="amount" class="input" type="text" inputmode="numeric"><div class="hint">برای مراحل پیشرفته‌تر الزامی است.</div><div class="err" role="alert"></div></div>
     <div id="extraFields"></div>
     <div class="field"><label for="notes">توضیحات</label><textarea id="notes" class="input area" placeholder="هر نکته‌ای که برای این مشتری لازم است"></textarea></div>
+    <div class="field"><label for="managerNote">یادداشت مدیر (فقط برای خودم)</label><textarea id="managerNote" class="input area" placeholder="این یادداشت در خروجی‌ها دیده نمی‌شود"></textarea></div>
     <div class="field"><label for="next">پیگیری بعدی</label>
       <select id="next" class="input"><option value="1">فردا</option><option value="2" selected>۲ روز دیگر (پیشنهادی)</option><option value="7">یک هفته دیگر</option><option value="14">دو هفته دیگر</option></select></div>
   </form>
@@ -339,7 +171,6 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
   </footer>
 </aside>
 
-<!-- ثبت نتیجه‌ی تماس -->
 <div id="callModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="cTitle" aria-hidden="true">
   <header><h2 id="cTitle">ثبت نتیجه‌ی تماس</h2></header>
   <div class="sub" id="cSub"></div>
@@ -357,16 +188,33 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
   </footer>
 </div>
 
-<!-- پنجره‌ی جزئیات مشتری -->
+<div id="remindModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="rTitle" aria-hidden="true">
+  <header><h2 id="rTitle">یادآوری</h2><button id="rClose" class="icon" type="button" aria-label="بستن">✕</button></header>
+  <div class="sub" id="rSub"></div>
+  <div class="seg">
+    <button class="chip" type="button" data-rem="hour" aria-pressed="true">۱ ساعت دیگر</button>
+    <button class="chip" type="button" data-rem="tomorrow" aria-pressed="false">فردا ساعت ۹</button>
+    <button class="chip" type="button" data-rem="three" aria-pressed="false">۳ روز دیگر</button>
+    <button class="chip" type="button" data-rem="custom" aria-pressed="false">زمان دلخواه</button>
+  </div>
+  <div class="field" id="f-rem-custom" hidden style="margin-top:12px"><label for="rCustom">تاریخ و ساعت</label><input id="rCustom" class="input" type="datetime-local"></div>
+  <footer>
+    <button id="rSave" class="btn primary lg" type="button">ثبت یادآوری</button>
+    <button id="rClear" class="btn danger" type="button">حذف یادآوری</button>
+  </footer>
+</div>
+
 <div id="detailModal" class="glass modal wide" role="dialog" aria-modal="true" aria-labelledby="dName" aria-hidden="true">
   <header>
     <div><h2 id="dName"></h2><div class="sub" id="dSub"></div></div>
     <button id="dClose" class="icon" type="button" aria-label="بستن">✕</button>
   </header>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
+  <div class="seg">
     <a class="btn call" id="dCall" href="#">تماس</a>
     <a class="btn wa" id="dWa" href="#" target="_blank" rel="noopener">واتساپ</a>
     <button class="btn" id="dCallLog" type="button">ثبت تماس</button>
+    <button class="btn" id="dRemind" type="button">یادآوری</button>
+    <button class="btn" id="dArchive" type="button">بایگانی</button>
     <button class="btn" id="dEdit" type="button">ویرایش</button>
     <button class="btn" id="dInvoice" type="button">فاکتور جدید</button>
     <button class="btn danger" id="dDelete" type="button">حذف</button>
@@ -377,756 +225,159 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
   <div class="kv" id="dKv"></div>
   <h3>توضیحات</h3>
   <div class="notes-box" id="dNotes"></div>
+  <h3>یادداشت مدیر (فقط برای خودم)</h3>
+  <div class="notes-box" id="dManager"></div>
   <h3>فاکتورهای این مشتری</h3>
   <div class="timeline" id="dInv"></div>
   <h3>تاریخچه‌ی فعالیت</h3>
   <div class="timeline" id="dTimeline"></div>
 </div>
 
-<!-- پروفایل -->
-<div id="profileModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="pTitle" aria-hidden="true">
-  <header><h2 id="pTitle">پروفایل کاربر</h2><button id="pClose" class="icon" type="button" aria-label="بستن">✕</button></header>
-  <div class="auth-box" id="authBox">
-    <div class="auth-tabs" id="authTabs">
-      <button class="chip" type="button" data-tab="login" aria-pressed="true">ورود</button>
-      <button class="chip" type="button" data-tab="signup" aria-pressed="false">ثبت نام</button>
-    </div>
-    <form id="loginForm" novalidate>
-      <div class="field" id="f-l-phone"><label for="lPhone">شماره موبایل</label><input id="lPhone" class="input" type="tel" inputmode="numeric" placeholder="09129194975" autocomplete="username"><div class="err" role="alert"></div></div>
-      <div class="field" id="f-l-pw"><label for="lPw">رمز عبور</label><input id="lPw" class="input" type="password" autocomplete="current-password"><div class="err" role="alert"></div></div>
-      <button id="loginBtn" class="btn primary" type="submit">ورود به حساب</button>
-    </form>
-    <form id="signupForm" novalidate hidden>
-      <div class="field" id="f-s-name"><label for="sName">نام و نام خانوادگی</label><input id="sName" class="input" type="text" autocomplete="name"><div class="err" role="alert"></div></div>
-      <div class="field" id="f-s-phone"><label for="sPhone">شماره موبایل</label><input id="sPhone" class="input" type="tel" inputmode="numeric" placeholder="09129194975" autocomplete="username"><div class="err" role="alert"></div></div>
-      <div class="field" id="f-s-pw"><label for="sPw">رمز عبور (حداقل ۶ نویسه)</label><input id="sPw" class="input" type="password" autocomplete="new-password"><div class="err" role="alert"></div></div>
-      <div class="field" id="f-s-pw2"><label for="sPw2">تکرار رمز عبور</label><input id="sPw2" class="input" type="password" autocomplete="new-password"><div class="err" role="alert"></div></div>
-      <button id="signupBtn" class="btn primary" type="submit">ساخت حساب</button>
-    </form>
-    <div id="accountBox" hidden>
-      <div class="sub" id="accText" style="margin:0"></div>
-      <button id="logoutBtn" class="btn danger" type="button">خروج از حساب</button>
-    </div>
-    <div class="hint" style="font-size:12px;color:var(--muted)">حساب‌ها فقط روی همین دستگاه نگه‌داری می‌شوند؛ این بخش برای نمایش جریان ورود است، نه احراز هویت واقعی.</div>
-  </div>
-  <form id="pForm" novalidate>
-    <div class="field"><label for="pName">نام و نام خانوادگی</label><input id="pName" class="input" type="text"></div>
-    <div class="field" style="margin-top:10px"><label for="pRole">سمت</label><input id="pRole" class="input" type="text" placeholder="مثلاً مدیر فروش"></div>
-    <div class="field" style="margin-top:10px"><label for="pCompany">نام کسب‌وکار</label><input id="pCompany" class="input" type="text"></div>
-  </form>
-  <footer><button id="pSave" class="btn primary lg" type="button">ذخیره‌ی پروفایل</button><button id="pCancel" class="btn ghost" type="button">انصراف</button></footer>
-</div>
-
-<!-- فاکتور جدید -->
 <div id="invModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="invTitle" aria-hidden="true">
   <header><h2 id="invTitle">فاکتور جدید</h2><button id="invClose" class="icon" type="button" aria-label="بستن">✕</button></header>
   <div class="sub">فاکتور روی همین دستگاه ثبت می‌شود.</div>
-  <form id="invForm" novalidate>
+  <form id="invForm" class="stack" novalidate>
     <div class="field" id="f-inv-cust"><label for="invCust">مشتری</label><select id="invCust" class="input"></select><div class="err" role="alert"></div></div>
-    <div class="field" id="f-inv-amt" style="margin-top:10px"><label for="invAmt">مبلغ (تومان)</label><input id="invAmt" class="input" type="text" inputmode="numeric"><div class="err" role="alert"></div></div>
-    <div class="field" style="margin-top:10px"><label for="invDue">مهلت پرداخت</label><select id="invDue" class="input"><option value="7">۷ روز</option><option value="14" selected>۱۴ روز</option><option value="30">۳۰ روز</option></select></div>
-    <div class="field" style="margin-top:10px"><label for="invStatus">وضعیت</label><select id="invStatus" class="input"><option value="issued">صادر شده</option><option value="draft">پیش‌نویس</option></select></div>
-    <div class="field" style="margin-top:10px"><label for="invNotes">توضیحات فاکتور</label><textarea id="invNotes" class="input area"></textarea></div>
+    <div class="field" id="f-inv-amt"><label for="invAmt">مبلغ (تومان)</label><input id="invAmt" class="input" type="text" inputmode="numeric"><div class="err" role="alert"></div></div>
+    <div class="field"><label for="invDue">مهلت پرداخت</label><select id="invDue" class="input"><option value="7">۷ روز</option><option value="14" selected>۱۴ روز</option><option value="30">۳۰ روز</option></select></div>
+    <div class="field"><label for="invStatus">وضعیت</label><select id="invStatus" class="input"><option value="issued">صادر شده</option><option value="draft">پیش‌نویس</option></select></div>
+    <div class="field"><label for="invNotes">توضیحات فاکتور</label><textarea id="invNotes" class="input area"></textarea></div>
   </form>
   <footer><button id="invSave" class="btn primary lg" type="button">ثبت فاکتور</button><button id="invCancel" class="btn ghost" type="button">انصراف</button></footer>
 </div>
 
+<div id="payModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="payTitle" aria-hidden="true">
+  <header><h2 id="payTitle">ثبت پرداخت</h2><button id="payClose" class="icon" type="button" aria-label="بستن">✕</button></header>
+  <div class="sub" id="paySub"></div>
+  <form id="payForm" class="stack" novalidate>
+    <div class="field" id="f-pay-amt"><label for="payAmt">مبلغ پرداختی (تومان)</label><input id="payAmt" class="input" type="text" inputmode="numeric"><div class="err" role="alert"></div></div>
+  </form>
+  <footer>
+    <button id="paySave" class="btn primary lg" type="button">ثبت پرداخت</button>
+    <button id="payFull" class="btn" type="button">پرداخت کامل</button>
+    <button id="payCancel" class="btn ghost" type="button">انصراف</button>
+  </footer>
+</div>
+
+<div id="mergeModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="mTitle" aria-hidden="true">
+  <header><h2 id="mTitle">ادغام مشتری‌های تکراری</h2><button id="mClose" class="icon" type="button" aria-label="بستن">✕</button></header>
+  <div class="sub">مشتری‌هایی که شماره‌ی موبایل یکسان دارند. قدیمی‌ترین رکورد نگه داشته می‌شود و بقیه به آن منتقل می‌شوند.</div>
+  <div class="list" id="mergeList"></div>
+  <footer>
+    <button id="mRun" class="btn primary lg" type="button">ادغام همه</button>
+    <button id="mCancel" class="btn ghost" type="button">انصراف</button>
+  </footer>
+</div>
+
+<div id="colsModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="cTitle2" aria-hidden="true">
+  <header><h2 id="cTitle2">ستون‌های جدول</h2><button id="colsClose" class="icon" type="button" aria-label="بستن">✕</button></header>
+  <div class="sub">ستون‌هایی را که لازم داری نشان بده.</div>
+  <div class="list" id="colsList"></div>
+  <footer><button id="colsDone" class="btn primary lg" type="button">تأیید</button></footer>
+</div>
+
+<div id="importModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="iTitle" aria-hidden="true">
+  <header><h2 id="iTitle">وارد کردن CSV</h2><button id="iClose" class="icon" type="button" aria-label="بستن">✕</button></header>
+  <div class="sub">فایل باید ستون‌های نام، موبایل، منبع، مرحله، مبلغ را داشته باشد (نام ستون‌ها فارسی یا انگلیسی).</div>
+  <div class="list" id="importResult"></div>
+  <footer>
+    <button id="iPick" class="btn primary lg" type="button">انتخاب فایل</button>
+    <button id="iDone" class="btn ghost" type="button">بستن</button>
+  </footer>
+</div>
+<input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+
+<div id="settingsModal" class="glass modal wide" role="dialog" aria-modal="true" aria-labelledby="sTitle" aria-hidden="true">
+  <header><h2 id="sTitle">تنظیمات</h2><button id="sClose" class="icon" type="button" aria-label="بستن">✕</button></header>
+  <div class="seg" style="margin-bottom:12px">
+    <button class="chip" type="button" data-stab="look" aria-pressed="true">ظاهر</button>
+    <button class="chip" type="button" data-stab="profile" aria-pressed="false">پروفایل و حساب</button>
+  </div>
+
+  <div id="pane-look" class="stack">
+    <div class="setting-row">
+      <div><b>حالت نمایش</b><br><small>حالت شب یا روز</small></div>
+      <div class="seg">
+        <button class="chip" type="button" data-theme-set="light" aria-pressed="true">روز</button>
+        <button class="chip" type="button" data-theme-set="dark" aria-pressed="false">شب</button>
+      </div>
+    </div>
+    <div class="setting-row">
+      <div><b>اندازه‌ی نوشته</b><br><small id="fontLabel">۱۰۰٪</small></div>
+      <div class="seg">
+        <button class="btn sm" type="button" id="fontDown">A−</button>
+        <button class="btn sm" type="button" id="fontReset">پیش‌فرض</button>
+        <button class="btn sm" type="button" id="fontUp">A+</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pane-profile" class="stack" hidden>
+    <div class="auth-box" id="authBox">
+      <div class="seg" id="authTabs">
+        <button class="chip" type="button" data-tab="login" aria-pressed="true">ورود</button>
+        <button class="chip" type="button" data-tab="signup" aria-pressed="false">ثبت نام</button>
+      </div>
+      <form id="loginForm" novalidate>
+        <div class="field" id="f-l-phone"><label for="lPhone">شماره موبایل</label><input id="lPhone" class="input" type="tel" inputmode="numeric" placeholder="09129194975" autocomplete="username"><div class="err" role="alert"></div></div>
+        <div class="field" id="f-l-pw"><label for="lPw">رمز عبور</label><input id="lPw" class="input" type="password" autocomplete="current-password"><div class="err" role="alert"></div></div>
+        <button id="loginBtn" class="btn primary" type="submit">ورود به حساب</button>
+      </form>
+      <form id="signupForm" novalidate hidden>
+        <div class="field" id="f-s-name"><label for="sName">نام و نام خانوادگی</label><input id="sName" class="input" type="text" autocomplete="name"><div class="err" role="alert"></div></div>
+        <div class="field" id="f-s-phone"><label for="sPhone">شماره موبایل</label><input id="sPhone" class="input" type="tel" inputmode="numeric" placeholder="09129194975" autocomplete="username"><div class="err" role="alert"></div></div>
+        <div class="field" id="f-s-pw"><label for="sPw">رمز عبور (حداقل ۶ نویسه)</label><input id="sPw" class="input" type="password" autocomplete="new-password"><div class="err" role="alert"></div></div>
+        <div class="field" id="f-s-pw2"><label for="sPw2">تکرار رمز عبور</label><input id="sPw2" class="input" type="password" autocomplete="new-password"><div class="err" role="alert"></div></div>
+        <button id="signupBtn" class="btn primary" type="submit">ساخت حساب</button>
+      </form>
+      <div class="hint" style="font-size:12px;color:var(--muted)">حساب‌ها فقط روی همین دستگاه نگه‌داری می‌شوند؛ این بخش برای نمایش جریان ورود است، نه احراز هویت واقعی.</div>
+    </div>
+
+    <div id="accountBox" class="stack" hidden>
+      <div class="auth-box">
+        <div class="sub" id="accText" style="margin:0"></div>
+        <button id="logoutBtn" class="btn" type="button">خروج از حساب</button>
+      </div>
+      <form id="pForm" class="auth-box" novalidate>
+        <div class="field"><label for="pName">نام و نام خانوادگی</label><input id="pName" class="input" type="text"></div>
+        <div class="field"><label for="pRole">سمت</label><input id="pRole" class="input" type="text" placeholder="مثلاً مدیر فروش"></div>
+        <div class="field"><label for="pCompany">نام کسب‌وکار</label><input id="pCompany" class="input" type="text"></div>
+        <button id="pSave" class="btn primary" type="button">ذخیره‌ی پروفایل</button>
+      </form>
+      <form id="pwForm" class="auth-box" novalidate>
+        <b>تغییر رمز عبور</b>
+        <div class="field" id="f-c-old"><label for="cOld">رمز فعلی</label><input id="cOld" class="input" type="password" autocomplete="current-password"><div class="err" role="alert"></div></div>
+        <div class="field" id="f-c-new"><label for="cNew">رمز جدید (حداقل ۶ نویسه)</label><input id="cNew" class="input" type="password" autocomplete="new-password"><div class="err" role="alert"></div></div>
+        <div class="field" id="f-c-new2"><label for="cNew2">تکرار رمز جدید</label><input id="cNew2" class="input" type="password" autocomplete="new-password"><div class="err" role="alert"></div></div>
+        <button id="cSavePw" class="btn" type="button">تغییر رمز</button>
+      </form>
+      <div class="danger-zone">
+        <b>حذف حساب</b>
+        <small style="color:var(--muted)">حساب و همه‌ی داده‌های این دستگاه پاک می‌شود. برای تأیید، کلمه‌ی «حذف» را بنویس.</small>
+        <div class="field" id="f-del"><input id="delWord" class="input" type="text" placeholder="حذف"><div class="err" role="alert"></div></div>
+        <button id="delAccount" class="btn danger" type="button">حذف حساب و داده‌ها</button>
+      </div>
+    </div>
+  </div>
+  <footer><button id="sDone" class="btn primary lg" type="button">بستن</button></footer>
+</div>
+
+<div id="printArea"></div>
+
 <div id="toast" class="glass toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastAct" class="btn sm" type="button" hidden></button></div>
 
-<script>
-(function () {
-  "use strict";
-  const DAY = 86400000;
-  const KEY = "crm-v2";
-  const $ = (id) => document.getElementById(id);
-  const fa = (n) => Number(n).toLocaleString("fa-IR");
-
-  // ---------- کسب‌وکارهای دمو ----------
-  const BIZ = {
-    parts: { title: "پخش عمده‌ی لوازم یدکی خودرو", short: "لوازم یدکی", desc: "فروش عمده به تعمیرگاه و فروشگاه قطعه با اعتبار و بدهی.",
-      stages: ["ثبت شده", "پیش‌فاکتور", "فاکتور صادر شد", "وصول شد"],
-      features: ["سقف اعتبار و هشدار بدهی", "کد اقتصادی برای فاکتور رسمی", "روش پرداخت: نقد، چک، ۳۰ روزه", "نوع خودرو و کالای مورد علاقه"],
-      fields: [{ k: "credit", l: "سقف اعتبار (تومان)", t: "num" }, { k: "debt", l: "مانده‌ی بدهی (تومان)", t: "num" },
-               { k: "pay", l: "روش پرداخت", t: "sel", o: ["نقد", "چک", "۳۰ روزه"] }, { k: "car", l: "نوع خودرو", t: "text" }, { k: "eco", l: "کد اقتصادی", t: "text" }],
-      names: ["تعمیرگاه سریع", "فروشگاه قطعه‌ی شرق", "گاراژ پارس", "پخش یدک نوین", "تعمیرگاه مرکزی", "فروشگاه نیک"] },
-    school: { title: "آموزشگاه زبان", short: "آموزشگاه", desc: "ثبت‌نام زبان‌آموز، آزمون تعیین سطح، کلاس آزمایشی و اقساط.",
-      stages: ["آزمایشی", "ثبت‌نام شده", "در حال تحصیل", "منصرف"],
-      features: ["تعیین سطح و کلاس آزمایشی", "شهریه، اقساط و معوقه", "موبایل والد برای زیر ۱۸ سال", "یادآوری شروع کلاس"],
-      fields: [{ k: "course", l: "دوره", t: "sel", o: ["انگلیسی", "آلمانی", "آیلتس", "کودکان"] }, { k: "level", l: "سطح", t: "sel", o: ["مبتدی", "متوسط", "پیشرفته"] },
-               { k: "age", l: "سن", t: "num" }, { k: "guardian", l: "موبایل والد (زیر ۱۸ سال)", t: "text" }, { k: "inst", l: "تعداد اقساط", t: "num" }],
-      names: ["زبان‌آموز نسترن", "کلاس کودکان آوا", "آیلتس پارسا", "آلمانی سحر", "انگلیسی امیرعلی", "گروه شبانه ترنم"] },
-    clinic: { title: "کلینیک زیبایی", short: "کلینیک", desc: "رزرو نوبت، یادآوری ویزیت و فروش بسته‌ی خدمات. بدون پرونده‌ی درمانی.",
-      stages: ["نوبت گرفته", "ویزیت شده", "بسته‌ی خدماتی", "پیگیری"],
-      features: ["رزرو نوبت و وضعیت حضور", "یادآوری ویزیت بعدی", "مانده‌ی بسته‌ی خدماتی", "بدون ثبت اطلاعات درمانی"],
-      fields: [{ k: "service", l: "خدمت مورد نظر", t: "text" }, { k: "remain", l: "مانده‌ی بسته (تومان)", t: "num" },
-               { k: "birth", l: "سال تولد", t: "text" }, { k: "visit", l: "وضعیت آخرین نوبت", t: "sel", o: ["حاضر", "غایب", "لغو شده"] }],
-      names: ["نیلوفر رضایی", "سارا کریمی", "مهسا احمدی", "پریسا نوری", "الهام حیدری", "شیدا مرادی"] },
-    reno: { title: "پیمانکاری بازسازی منزل", short: "بازسازی", desc: "از درخواست و بازدید تا برآورد و قرارداد با پرداخت مرحله‌ای.",
-      stages: ["درخواست", "بازدید", "برآورد", "قرارداد"],
-      features: ["ثبت بازدید و گزارش عکس", "برآورد متریال و دستمزد جدا", "پرداخت مرحله‌ای ۳۰/۴۰/۳۰", "خروجی برآورد PDF"],
-      fields: [{ k: "area", l: "متراژ (متر مربع)", t: "num" }, { k: "work", l: "نوع کار", t: "sel", o: ["آشپزخانه", "حمام", "کفسازی", "نقاشی", "بازسازی کامل"] },
-               { k: "address", l: "آدرس پروژه", t: "text" }, { k: "quote", l: "برآورد اولیه (تومان)", t: "num" }],
-      names: ["خانم رستمی", "آقای جعفری", "منزل نارمک", "واحد زعفرانیه", "ویلا کردان", "آپارتمان ستارخان"] },
-    soft: { title: "شرکت برنامه‌نویسی", short: "برنامه‌نویسی", desc: "فروش پروژه‌ی نرم‌افزاری، پیشنهاد فنی و پشتیبانی ماهانه.",
-      stages: ["نیازسنجی", "پیشنهاد فنی", "قرارداد", "در حال اجرا"],
-      features: ["پیشنهاد سه‌نسخه‌ای قیمت", "پیش‌بینی فروش وزنی", "یادآوری تمدید پشتیبانی", "تکنولوژی درخواستی مشتری"],
-      fields: [{ k: "proj", l: "نوع پروژه", t: "sel", o: ["وب", "موبایل", "سیستم داخلی", "API", "پشتیبانی"] }, { k: "tech", l: "تکنولوژی درخواستی", t: "text" },
-               { k: "budget", l: "بودجه‌ی تقریبی (تومان)", t: "num" }, { k: "support", l: "پشتیبانی ماهانه", t: "sel", o: ["ندارد", "دارد"] }],
-      names: ["استارتاپ نوآوران", "فروشگاه آنلاین مهر", "کلینیک دیجیتال سلامت", "شرکت لجستیک آرمان", "باشگاه ورزشی پویا", "سرای کتاب"] }
-  };
-  const BIZ_ORDER = ["parts", "school", "clinic", "reno", "soft"];
-  const SOURCES = ["اینستاگرام", "معرفی دوستان", "وب‌سایت", "تماس ورودی", "نمایشگاه"];
-  const AMOUNTS = [0, 40000000, 65000000, 90000000, 120000000, 55000000];
-  const STAGE_IDX = [0, 1, 1, 2, 3, 3];
-  const OFFSETS = [1, 0, -2, 3, 5, 10];
-
-  // ---------- کمکی‌ها ----------
-  const money = (n) => n ? fa(n) + " تومان" : "بدون مبلغ";
-  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-  const daysFromNow = (ts) => Math.ceil((ts - Date.now()) / DAY);
-  const toEn = (s) => String(s || "").replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
-  const JM = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
-  function g2j(gy, gm, gd) {
-    const gdm = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
-    const gy2 = gm > 2 ? gy + 1 : gy;
-    let days = 355666 + 365 * gy + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + gd + gdm[gm - 1];
-    let jy = -1595 + 33 * Math.floor(days / 12053); days %= 12053;
-    jy += 4 * Math.floor(days / 1461); days %= 1461;
-    if (days > 365) { jy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
-    const jm = days < 186 ? 1 + Math.floor(days / 31) : 7 + Math.floor((days - 186) / 30);
-    const jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30);
-    return [jy, jm, jd];
-  }
-  const fdig = (n) => String(n).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
-  const jalali = (ts) => { const d = new Date(ts); const [y, m, day] = g2j(d.getFullYear(), d.getMonth() + 1, d.getDate()); return fdig(day) + " " + JM[m - 1] + " " + fdig(y); };
-
-  // ---------- وضعیت و داده ----------
-  let st = null;
-  try { st = JSON.parse(localStorage.getItem(KEY)); } catch (e) { st = null; }
-  if (!st || !Array.isArray(st.leads)) st = { business: null, leads: [], nextId: 1, profile: { name: "کاربر دمو", role: "مدیر فروش", company: "" }, ui: { collapsed: false } };
-  st.ui = st.ui || { collapsed: false };
-  st.profile = st.profile || { name: "کاربر دمو", role: "مدیر فروش", company: "" };
-  st.invoices = Array.isArray(st.invoices) ? st.invoices : [];
-  st.nextInv = st.nextInv || 1;
-  st.users = Array.isArray(st.users) ? st.users : [];
-  st.session = st.session || null;
-
-  function seedFor(b) {
-    const cfg = BIZ[b], now = Date.now();
-    return cfg.names.map((name, i) => {
-      const extra = {};
-      cfg.fields.forEach((f, j) => { extra[f.k] = f.t === "num" ? (i + 1) * 1000000 * (j + 1) : f.t === "sel" ? f.o[(i + j) % f.o.length] : (f.k === "address" ? "نمونه، تهران" : "نمونه"); });
-      const stage = STAGE_IDX[i];
-      return { id: st.nextId++, business: b, name, phone: "0912" + String(1111111 + i * 48611).padStart(7, "0").slice(0, 7),
-        source: SOURCES[i % SOURCES.length], stage, stageSince: now - DAY * (i + 1), amount: AMOUNTS[i],
-        next: now + OFFSETS[i] * DAY, extra, log: [{ t: now - DAY * 5, text: "اطلاعیه ثبت شد" }] };
-    });
-  }
-  function ensureSeed(b) {
-    if (!st.leads.some((l) => l.business === b)) st.leads.push(...seedFor(b));
-    if (!st.invoices.some((i) => i.business === b)) seedInvoices(b);
-  }
-  function seedInvoices(b) {
-    const now = Date.now(), list = st.leads.filter((l) => l.business === b);
-    const pat = [{ i: 1, age: 4 }, { i: 2, age: 30 }, { i: 3, age: 20, paid: 5 }, { i: 4, age: 6 }, { i: 5, age: 2 }];
-    pat.forEach((p) => {
-      const l = list[p.i]; if (!l || !l.amount) return;
-      const issued = now - DAY * p.age;
-      st.invoices.push({ no: st.nextInv++, business: b, leadId: l.id, custName: l.name, amount: l.amount,
-        issued, due: issued + 14 * DAY, paid: p.paid ? issued + p.paid * DAY : null, draft: false, notes: "" });
-    });
-  }
-  const biz = () => BIZ[st.business];
-  const myLeads = () => st.leads.filter((l) => l.business === st.business);
-  function save() { localStorage.setItem(KEY, JSON.stringify(st)); $("sync").textContent = "ذخیره شد · روی دستگاه"; }
-  function note(l, text) { l.log = l.log || []; l.log.unshift({ t: Date.now(), text }); }
-
-  // ---------- فیلتر و جستجو ----------
-  let view = "today", filter = "all", search = "", pendingDelete = null, editingId = null, callId = null, callRes = "answered";
-  const matchSearch = (l) => { const q = toEn(search).trim().toLowerCase(); return !q || l.name.toLowerCase().includes(q) || l.phone.includes(q); };
-  function matchFilter(l) {
-    const d = daysFromNow(l.next);
-    switch (filter) {
-      case "today": return l.stage < 3 && d <= 0;
-      case "overdue": return l.stage < 3 && d < 0;
-      case "open": return l.stage < 3;
-      case "won": return l.stage === 3;
-      default: return true;
-    }
-  }
-  const fd = (n) => String(n).padStart(3, "0").replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
-  const invStatus = (i) => i.draft ? "draft" : i.paid ? "paid" : i.due < Date.now() ? "overdue" : "issued";
-  const INV_LABEL = { draft: "پیش‌نویس", issued: "صادر شده", overdue: "معوق", paid: "پرداخت شده" };
-  const myInvoices = () => st.invoices.filter((i) => i.business === st.business).sort((a, b) => b.no - a.no);
-  const visible = () => myLeads().filter((l) => matchSearch(l) && matchFilter(l));
-
-  // ---------- پوسته و ناوبری ----------
-  const VIEW_TITLE = { today: "امروز", notices: "اطلاعیه‌ها", customers: "مشتری‌ها", invoices: "فاکتورها", reports: "گزارش‌ها" };
-  function setView(v) {
-    view = v;
-    document.querySelectorAll(".nav[data-view]").forEach((b) => b.setAttribute("aria-current", b.dataset.view === v ? "page" : "false"));
-    document.querySelectorAll(".view").forEach((s) => s.classList.toggle("on", s.id === "v-" + v));
-    $("pageTitle").textContent = VIEW_TITLE[v];
-    render();
-  }
-  document.querySelectorAll(".nav[data-view]").forEach((b) => b.addEventListener("click", () => setView(b.dataset.view)));
-  function setFilter(f) {
-    filter = f;
-    document.querySelectorAll(".chip[data-filter]").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.filter === f)));
-    render();
-  }
-  document.querySelectorAll(".chip[data-filter]").forEach((c) => c.addEventListener("click", () => setFilter(c.dataset.filter)));
-  $("q").addEventListener("input", (e) => { search = e.target.value; render(); });
-  function setCollapsed(c) {
-    st.ui.collapsed = c; $("shell").classList.toggle("collapsed", c);
-    $("toggleSide").setAttribute("aria-expanded", String(!c)); save();
-  }
-  $("toggleSide").addEventListener("click", () => setCollapsed(!st.ui.collapsed));
-
-  function showStart() {
-    $("shell").hidden = true; $("start").hidden = false;
-    const grid = $("bizGrid"); grid.textContent = "";
-    BIZ_ORDER.forEach((k) => {
-      const b = BIZ[k];
-      const card = el("article", "glass biz");
-      card.append(el("h2", "", b.title), el("p", "", b.desc));
-      const ul = el("ul"); b.features.forEach((f) => ul.appendChild(el("li", "", f))); card.appendChild(ul);
-      const btn = el("button", "btn primary", "نمایش دمو این کسب‌وکار"); btn.type = "button";
-      btn.addEventListener("click", () => pickBiz(k));
-      card.appendChild(btn);
-      grid.appendChild(card);
-    });
-  }
-  function pickBiz(k) {
-    st.business = k; ensureSeed(k); save();
-    filter = "all"; search = ""; $("q").value = "";
-    document.querySelectorAll(".chip[data-filter]").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.filter === "all")));
-    $("start").hidden = true; $("shell").hidden = false;
-    setCollapsed(!!st.ui.collapsed);
-    applyBizUI(); setView("today");
-    toast("کسب‌وکار: " + BIZ[k].title);
-  }
-  function applyBizUI() {
-    const b = biz();
-    $("pageSub").textContent = b.title + " · " + fa(myLeads().length) + " مشتری";
-    $("newNotice").textContent = "";
-    $("newNotice").append("اطلاعیه‌ی جدید ", el("kbd", "", "N"));
-    const sel = $("stage"); sel.textContent = "";
-    b.stages.forEach((s, i) => { const o = el("option", "", s); o.value = i; sel.appendChild(o); });
-    $("profileBtn").textContent = (st.profile.name || "م").trim().charAt(0) || "م";
-  }
-
-  // ---------- رندر ----------
-  function render() {
-    if (!st.business) return;
-    const due = myLeads().filter((l) => l.stage < 3 && daysFromNow(l.next) <= 0);
-    $("badgeToday").textContent = fa(due.length);
-    if (view === "today") renderToday(due);
-    if (view === "notices") renderNotices();
-    if (view === "customers") renderCustomers();
-    if (view === "invoices") renderInvoices();
-    if (view === "reports") renderReports();
-  }
-
-  function renderToday(due) {
-    const k = $("kpisToday"); k.textContent = "";
-    const all = myLeads();
-    const won = all.filter((l) => l.stage === 3).reduce((s, l) => s + l.amount, 0);
-    const open = all.filter((l) => l.stage < 3).reduce((s, l) => s + l.amount, 0);
-    [["کارهای امروز", fa(due.length), "پیگیری امروز یا عقب‌افتاده"],
-     ["اطلاعیه‌های باز", fa(all.filter((l) => l.stage < 3).length), "در مراحل فروش"],
-     ["ارزش باز", fa(Math.round(open / 1e6)) + " م", "میلیون تومان در جریان"],
-     ["ثبت‌شده به‌عنوان برنده", fa(Math.round(won / 1e6)) + " م", "میلیون تومان"]
-    ].forEach(([l, v, s]) => { const c = el("div", "glass kpi"); c.append(el("span", "lbl", l), el("b", "", v), el("small", "", s)); k.appendChild(c); });
-
-    const list = $("todayList"); list.textContent = "";
-    const items = due.filter(matchSearch).sort((a, b) => a.next - b.next);
-    if (!items.length) { list.appendChild(el("div", "glass empty", "امروز پیگیری‌ای نداری.")); return; }
-    items.forEach((l) => {
-      const d = daysFromNow(l.next);
-      const row = el("article", "glass row-item");
-      row.addEventListener("click", (e) => { if (!e.target.closest("button,a")) openDetail(l.id); });
-      const info = el("div", "info");
-      info.append(el("div", "nm", l.name), el("div", "meta", biz().stages[l.stage] + " · " + l.phone + " · " + money(l.amount)));
-      info.appendChild(el("div", d < 0 ? "over" : "today", (d < 0 ? "عقب‌افتاده " + fa(-d) + " روز" : "پیگیری امروز") + " · " + jalali(l.next)));
-      const b = el("div", "btns");
-      const call = el("a", "btn sm call", "تماس"); call.href = "tel:" + l.phone;
-      const wa = el("a", "btn sm wa", "واتساپ"); wa.href = "https://wa.me/98" + l.phone.slice(1); wa.target = "_blank"; wa.rel = "noopener";
-      const res = el("button", "btn sm primary", "ثبت نتیجه"); res.type = "button"; res.addEventListener("click", () => openCall(l.id));
-      const det = el("button", "btn sm", "جزئیات"); det.type = "button"; det.addEventListener("click", () => openDetail(l.id));
-      b.append(call, wa, res, det);
-      row.append(info, b);
-      list.appendChild(row);
-    });
-  }
-
-  function renderNotices() {
-    const board = $("board"); board.textContent = "";
-    const b = biz();
-    b.stages.forEach((name, s) => {
-      const items = visible().filter((l) => l.stage === s);
-      const col = el("section", "glass col"); col.dataset.stage = s;
-      const head = el("header"); head.append(el("span", "", name), el("em", "", fa(items.length)));
-      col.appendChild(head);
-      col.addEventListener("dragover", (e) => { e.preventDefault(); col.classList.add("over-drop"); });
-      col.addEventListener("dragleave", () => col.classList.remove("over-drop"));
-      col.addEventListener("drop", (e) => { e.preventDefault(); col.classList.remove("over-drop"); const id = Number(e.dataTransfer.getData("text/plain")); if (id) moveLead(id, s); });
-      if (!items.length) col.appendChild(el("div", "empty", "اطلاعیه‌ای در این مرحله نیست."));
-      items.forEach((l) => col.appendChild(card(l)));
-      board.appendChild(col);
-    });
-  }
-
-  function card(l) {
-    const c = el("article", "glass card-lead"); c.tabIndex = 0; c.draggable = true; c.dataset.id = l.id;
-    const d = daysFromNow(l.next);
-    const nm = el("div", "nm", l.name);
-    c.append(nm, el("div", "meta", l.phone + " · " + l.source), el("div", "amt", money(l.amount)));
-    c.appendChild(el("div", d < 0 ? "over" : d === 0 ? "today" : "meta", (d < 0 ? "عقب‌افتاده" : d === 0 ? "امروز" : "پیگیری") + " · " + jalali(l.next)));
-    const row = el("div", "row");
-    const sel = el("select"); sel.setAttribute("aria-label", "تغییر مرحله " + l.name);
-    biz().stages.forEach((s, i) => { const o = el("option", "", s); o.value = i; if (i === l.stage) o.selected = true; sel.appendChild(o); });
-    sel.addEventListener("change", () => moveLead(l.id, Number(sel.value)));
-    const call = el("button", "btn sm call", "تماس"); call.type = "button"; call.addEventListener("click", () => openCall(l.id));
-    const del = el("button", "btn sm danger", "حذف"); del.type = "button"; del.setAttribute("aria-label", "حذف " + l.name);
-    del.addEventListener("click", () => askDelete(l.id, del));
-    row.append(sel, call, del); c.appendChild(row);
-    c.addEventListener("click", (e) => { if (!e.target.closest("button,select,a,textarea")) openDetail(l.id); });
-    c.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/plain", String(l.id)); c.style.opacity = ".5"; });
-    c.addEventListener("dragend", () => { c.style.opacity = ""; });
-    c.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowRight" && l.stage < 3) { e.preventDefault(); moveLead(l.id, l.stage + 1, true); }
-      if (e.key === "ArrowLeft" && l.stage > 0) { e.preventDefault(); moveLead(l.id, l.stage - 1, true); }
-      if (e.key === "Enter") { e.preventDefault(); openDetail(l.id); }
-    });
-    return c;
-  }
-
-  function renderCustomers() {
-    const body = $("custBody"); body.textContent = "";
-    visible().forEach((l) => {
-      const tr = el("tr");
-      tr.addEventListener("click", () => openDetail(l.id));
-      tr.append(el("td", "", l.name), el("td", "", l.phone), el("td", "", l.source), el("td", "", biz().stages[l.stage]), el("td", "", l.amount ? fa(l.amount) : "—"), el("td", "", jalali(l.next)));
-      body.appendChild(tr);
-    });
-    if (!body.children.length) { const tr = el("tr"); const td = el("td", "empty", "موردی پیدا نشد."); td.colSpan = 6; tr.appendChild(td); body.appendChild(tr); }
-  }
-
-  function renderReports() {
-    const all = myLeads(), total = all.length, won = all.filter((l) => l.stage === 3);
-    const rate = total ? Math.round((won.length / total) * 100) : 0;
-    const avg = won.length ? Math.round(won.reduce((s, l) => s + l.amount, 0) / won.length / 1e6) : 0;
-    const k = $("kpisReports"); k.textContent = "";
-    [["کل مشتری‌ها", fa(total), "ثبت‌شده در این کسب‌وکار"], ["نرخ تبدیل", fa(rate) + "٪", "مرحله‌ی آخر به کل"],
-     ["میانگین مبلغ برنده", fa(avg) + " م", "میلیون تومان"], ["پیگیری عقب‌افتاده", fa(all.filter((l) => l.stage < 3 && daysFromNow(l.next) < 0).length), "نیاز به اقدام"]
-    ].forEach(([l, v, s]) => { const c = el("div", "glass kpi"); c.append(el("span", "lbl", l), el("b", "", v), el("small", "", s)); k.appendChild(c); });
-    bars($("stageBars"), biz().stages.map((s, i) => [s, all.filter((l) => l.stage === i).length]), total);
-    const sources = [...new Set(all.map((l) => l.source))];
-    bars($("sourceBars"), sources.map((s) => [s, all.filter((l) => l.source === s).length]), total);
-    const top = [...all].sort((a, b) => b.amount - a.amount).slice(0, 5);
-    const max = top.length ? top[0].amount : 0;
-    bars($("topBars"), top.map((l) => [l.name, l.amount]), max, true);
-  }
-  function bars(host, rows, total, money_) {
-    host.textContent = "";
-    rows.forEach(([label, n]) => {
-      const r = el("div", "bar-row");
-      const bar = el("div", "bar"); const fill = el("i"); fill.style.width = (total ? (n / total) * 100 : 0) + "%"; bar.appendChild(fill);
-      r.append(el("span", "", label), bar, el("span", "", money_ ? fa(Math.round(n / 1e6)) + " م" : fa(n)));
-      host.appendChild(r);
-    });
-  }
-
-  function renderInvoices() {
-    const all = myInvoices(), active = all.filter((i) => !i.draft), unpaid = active.filter((i) => !i.paid);
-    const sum = (a) => a.reduce((s, i) => s + i.amount, 0);
-    const paid = sum(active.filter((i) => i.paid)), overdue = unpaid.filter((i) => i.due < Date.now());
-    const k = $("kpisInv"); k.textContent = "";
-    [["فاکتورهای صادر شده", fa(active.length), "بدون پیش‌نویس"], ["وصول‌شده", fa(Math.round(paid / 1e6)) + " م", "میلیون تومان"],
-     ["مانده‌ی وصول‌نشده", fa(Math.round(sum(unpaid) / 1e6)) + " م", "میلیون تومان"], ["معوق", fa(overdue.length), "گذشته از سررسید"]
-    ].forEach(([l, v, s]) => { const c = el("div", "glass kpi"); c.append(el("span", "lbl", l), el("b", "", v), el("small", "", s)); k.appendChild(c); });
-
-    const body = $("invBody"); body.textContent = "";
-    all.forEach((i) => {
-      const key = invStatus(i);
-      const tr = el("tr");
-      if (st.leads.some((x) => x.id === i.leadId)) tr.addEventListener("click", () => openDetail(i.leadId));
-      const acts = el("td"), wrap = el("div", "btns");
-      if (!i.paid && !i.draft) {
-        const pb = el("button", "btn sm primary", "ثبت پرداخت"); pb.type = "button";
-        pb.addEventListener("click", (e) => { e.stopPropagation(); markPaid(i.no); });
-        wrap.appendChild(pb);
-      }
-      const db = el("button", "btn sm danger", "حذف"); db.type = "button";
-      db.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (db.dataset.armed !== "1") { db.dataset.armed = "1"; db.textContent = "تأیید حذف"; db.classList.add("confirm"); return; }
-        deleteInv(i.no);
-      });
-      wrap.appendChild(db); acts.appendChild(wrap);
-      const stc = el("td"); stc.appendChild(el("span", "st " + key, INV_LABEL[key]));
-      tr.append(el("td", "", "ف-" + fd(i.no)), el("td", "", i.custName), el("td", "", jalali(i.issued)), el("td", "", jalali(i.due)),
-        el("td", "", money(i.amount)), stc, acts);
-      body.appendChild(tr);
-    });
-    if (!all.length) { const tr = el("tr"); const td = el("td", "empty", "هنوز فاکتوری ثبت نشده است."); td.colSpan = 7; tr.appendChild(td); body.appendChild(tr); }
-  }
-  function markPaid(no) {
-    const inv = st.invoices.find((x) => x.no === no && x.business === st.business); if (!inv) return;
-    inv.paid = Date.now();
-    const l = st.leads.find((x) => x.id === inv.leadId); if (l) note(l, "فاکتور ف-" + fd(inv.no) + " پرداخت شد");
-    save(); render(); toast("پرداخت فاکتور ثبت شد.");
-  }
-  function deleteInv(no) {
-    st.invoices = st.invoices.filter((x) => !(x.no === no && x.business === st.business));
-    save(); render(); toast("فاکتور حذف شد.");
-  }
-
-  // ---------- فاکتور جدید ----------
-  function openInvoice(leadId) {
-    const list = myLeads();
-    if (!list.length) { toast("ابتدا یک مشتری ثبت کن."); return; }
-    const sel = $("invCust"); sel.textContent = "";
-    list.forEach((l) => { const o = el("option", "", l.name); o.value = String(l.id); sel.appendChild(o); });
-    if (leadId) sel.value = String(leadId);
-    const l = leadId ? st.leads.find((x) => x.id === leadId) : null;
-    $("invAmt").value = l && l.amount ? fa(l.amount) : "";
-    $("invDue").value = "14"; $("invStatus").value = "issued"; $("invNotes").value = "";
-    document.querySelectorAll("#invForm .field").forEach((f) => { f.classList.remove("bad"); const e = f.querySelector(".err"); if (e) e.textContent = ""; });
-    openModal("invModal");
-  }
-  function closeInv() { closeModal("invModal"); }
-  $("newInv").addEventListener("click", () => openInvoice(null));
-  $("invClose").addEventListener("click", closeInv);
-  $("invCancel").addEventListener("click", closeInv);
-  $("invSave").addEventListener("click", () => {
-    const leadId = Number($("invCust").value);
-    const l = st.leads.find((x) => x.id === leadId);
-    if (!l) { setErr("f-inv-cust", "مشتری را انتخاب کن."); return; }
-    setErr("f-inv-cust", "");
-    const raw = readNum($("invAmt").value), amount = Number(raw);
-    if (!/^\d+$/.test(raw) || amount <= 0) { setErr("f-inv-amt", "مبلغ را فقط با عدد مثبت وارد کن."); return; }
-    setErr("f-inv-amt", "");
-    const inv = { no: st.nextInv++, business: st.business, leadId, custName: l.name, amount,
-      issued: Date.now(), due: Date.now() + Number($("invDue").value) * DAY, paid: null,
-      draft: $("invStatus").value === "draft", notes: $("invNotes").value.trim() };
-    st.invoices.push(inv);
-    note(l, "فاکتور ف-" + fd(inv.no) + " " + (inv.draft ? "به‌صورت پیش‌نویس ثبت شد" : "صادر شد") + " · " + money(amount));
-    save(); closeInv(); render(); toast("فاکتور ف-" + fd(inv.no) + " ثبت شد.");
-  });
-
-  // ---------- عملیات ----------
-  function moveLead(id, stage, keepFocus) {
-    const l = st.leads.find((x) => x.id === id);
-    if (!l || l.stage === stage) return;
-    if (stage >= 2 && !l.amount) { toast("برای مرحله‌ی «" + biz().stages[stage] + "» ابتدا مبلغ را وارد کن.", "ویرایش", () => openDrawer(id)); openDrawer(id, true); return; }
-    const from = biz().stages[l.stage];
-    l.stage = stage; l.stageSince = Date.now();
-    note(l, "مرحله: " + from + " ← " + biz().stages[stage]);
-    save(); render();
-    if (keepFocus) { const c = document.querySelector('[data-id="' + id + '"]'); if (c) c.focus(); }
-    toast(l.name + " به «" + biz().stages[stage] + "» رفت.");
-  }
-  function askDelete(id, btn) {
-    if (pendingDelete !== id) {
-      pendingDelete = id; btn.textContent = "تأیید حذف"; btn.classList.add("confirm");
-      setTimeout(() => { if (pendingDelete === id) { pendingDelete = null; render(); } }, 3000);
-      return;
-    }
-    removeLead(id);
-  }
-  function removeLead(id) {
-    const idx = st.leads.findIndex((x) => x.id === id); if (idx < 0) return;
-    const [removed] = st.leads.splice(idx, 1);
-    st.lastDeleted = { lead: removed, index: idx }; pendingDelete = null;
-    save(); closeDetail(); render();
-    toast(removed.name + " حذف شد.", "بازگردانی", () => {
-      const d = st.lastDeleted; if (!d) return;
-      st.leads.splice(Math.min(d.index, st.leads.length), 0, d.lead); st.lastDeleted = null;
-      save(); render(); hideToast(); toast("بازگردانی شد.");
-    }, 5000);
-  }
-
-  // ---------- کشوی اطلاعیه (ایجاد/ویرایش) ----------
-  function renderExtra(values) {
-    const host = $("extraFields"); host.textContent = "";
-    biz().fields.forEach((f) => {
-      const wrap = el("div", "field"); wrap.dataset.k = f.k;
-      const lab = el("label", "", f.l); lab.htmlFor = "x_" + f.k; wrap.appendChild(lab);
-      let input;
-      if (f.t === "sel") { input = el("select", "input"); f.o.forEach((o) => { const op = el("option", "", o); op.value = o; input.appendChild(op); }); }
-      else { input = el("input", "input"); input.type = f.t === "num" ? "text" : "text"; input.inputMode = f.t === "num" ? "numeric" : "text"; }
-      input.id = "x_" + f.k;
-      if (values && values[f.k] != null) input.value = f.t === "num" && values[f.k] ? fa(values[f.k]) : values[f.k];
-      wrap.appendChild(input);
-      host.appendChild(wrap);
-    });
-  }
-  function openDrawer(id, requireAmount) {
-    const l = id ? st.leads.find((x) => x.id === id) : null;
-    editingId = l ? l.id : null;
-    $("dtitle").textContent = l ? "ویرایش اطلاعیه" : "اطلاعیه‌ی جدید";
-    $("name").value = l ? l.name : ""; $("phone").value = l ? l.phone : "";
-    $("source").value = l ? l.source : ""; $("stage").value = l ? String(l.stage) : "0";
-    $("amount").value = l && l.amount ? fa(l.amount) : ""; $("next").value = "2";
-    renderExtra(l ? l.extra : null);
-    $("notes").value = l ? (l.notes || "") : "";
-    document.querySelectorAll("#form .field").forEach((f) => { f.classList.remove("bad"); const e = f.querySelector(".err"); if (e) e.textContent = ""; });
-    $("drawer").classList.add("on"); $("drawer").setAttribute("aria-hidden", "false"); $("scrim").classList.add("on");
-    setTimeout(() => $("name").focus(), 50);
-    if (requireAmount) { $("stage").value = "2"; $("amount").focus(); }
-  }
-  function closeDrawer() { $("drawer").classList.remove("on"); $("drawer").setAttribute("aria-hidden", "true"); if (!isOpen("callModal") && !isOpen("detailModal") && !isOpen("profileModal") && !isOpen("invModal")) $("scrim").classList.remove("on"); }
-  function setErr(f, msg) { const n = $(f); n.classList.toggle("bad", !!msg); n.querySelector(".err").textContent = msg || ""; }
-  const readNum = (s) => { const r = toEn(s).replace(/[,٬\s]/g, ""); return r; };
-  function validate() {
-    let ok = true;
-    const name = $("name").value.trim();
-    const phone = toEn($("phone").value).replace(/[\s-]/g, "");
-    const stage = Number($("stage").value);
-    const raw = readNum($("amount").value);
-    const amount = raw ? Number(raw) : 0;
-    if (name.length < 2) { setErr("f-name", "نام را حداقل ۲ حرف وارد کن."); ok = false; } else setErr("f-name", "");
-    if (!/^09\d{9}$/.test(phone)) { setErr("f-phone", "شماره موبایل باید ۱۱ رقم و با 09 شروع شود."); ok = false; } else setErr("f-phone", "");
-    if (!$("source").value) { setErr("f-source", "منبع آشنایی را انتخاب کن."); ok = false; } else setErr("f-source", "");
-    if (stage >= 2 && !amount) { setErr("f-amount", "برای این مرحله مبلغ لازم است."); ok = false; }
-    else if (raw && (!/^\d+$/.test(raw) || amount <= 0)) { setErr("f-amount", "مبلغ فقط عدد مثبت باشد."); ok = false; }
-    else setErr("f-amount", "");
-    const extra = {};
-    biz().fields.forEach((f) => {
-      const inp = $("x_" + f.k); const v = inp ? inp.value.trim() : "";
-      extra[f.k] = f.t === "num" ? Number(readNum(v) || 0) : v;
-    });
-    return ok ? { name, phone, stage, amount, source: $("source").value, days: Number($("next").value), extra, notes: $("notes").value.trim() } : null;
-  }
-  $("form").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const v = validate(); if (!v) return;
-    const next = Date.now() + v.days * DAY;
-    let t;
-    if (editingId) {
-      t = st.leads.find((x) => x.id === editingId);
-      Object.assign(t, { name: v.name, phone: v.phone, stage: v.stage, amount: v.amount, source: v.source, next, extra: v.extra, notes: v.notes });
-      note(t, "اطلاعات ویرایش شد");
-    } else {
-      t = { id: st.nextId++, business: st.business, name: v.name, phone: v.phone, stage: v.stage, stageSince: Date.now(), amount: v.amount, source: v.source, next, extra: v.extra, notes: v.notes, log: [] };
-      note(t, "اطلاعیه ثبت شد");
-      st.leads.push(t);
-    }
-    save(); closeDrawer(); render(); toast(editingId ? "تغییرات ذخیره شد." : "اطلاعیه ثبت شد.");
-  });
-  $("form").addEventListener("keydown", (e) => { if (e.ctrlKey && e.key === "Enter") { e.preventDefault(); $("form").requestSubmit(); } });
-  $("newNotice").addEventListener("click", () => openDrawer(null));
-  $("newCustomer").addEventListener("click", () => openDrawer(null));
-  $("closeBtn").addEventListener("click", closeDrawer);
-  $("cancelBtn").addEventListener("click", closeDrawer);
-  $("scrim").addEventListener("click", () => { closeDrawer(); closeCall(); closeDetail(); closeProfile(); closeInv(); });
-
-  // ---------- پنجره‌ها ----------
-  function isOpen(id) { return $(id).classList.contains("on"); }
-  function openModal(id) { $(id).classList.add("on"); $(id).setAttribute("aria-hidden", "false"); $("scrim").classList.add("on"); }
-  function closeModal(id) { $(id).classList.remove("on"); $(id).setAttribute("aria-hidden", "true"); if (!["drawer", "callModal", "detailModal", "profileModal", "invModal"].some((x) => x !== id && isOpen(x))) $("scrim").classList.remove("on"); }
-
-  // ثبت نتیجه‌ی تماس
-  function openCall(id) {
-    const l = st.leads.find((x) => x.id === id); if (!l) return;
-    callId = id; callRes = "answered";
-    $("cSub").textContent = l.name + " · " + l.phone;
-    $("cNote").value = ""; $("cNext").value = "2";
-    document.querySelectorAll(".choice").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.res === callRes)));
-    openModal("callModal");
-  }
-  function closeCall() { closeModal("callModal"); }
-  document.querySelectorAll(".choice").forEach((b) => b.addEventListener("click", () => {
-    callRes = b.dataset.res;
-    document.querySelectorAll(".choice").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-  }));
-  $("cSave").addEventListener("click", () => {
-    const l = st.leads.find((x) => x.id === callId); if (!l) return;
-    const days = Number($("cNext").value);
-    l.next = Date.now() + days * DAY;
-    const label = { answered: "پاسخ داد", voicemail: "پیام گذاشته شد", nores: "پاسخ نداد" }[callRes];
-    if (callRes === "answered" && l.stage === 0) { l.stage = 1; l.stageSince = Date.now(); }
-    note(l, "تماس: " + label + ($("cNote").value.trim() ? " · " + $("cNote").value.trim() : "") + " · پیگیری " + fa(days) + " روز بعد");
-    save(); closeCall(); render(); toast(l.name + ": " + label + " · پیگیری " + fa(days) + " روز بعد");
-  });
-  $("cCancel").addEventListener("click", closeCall);
-
-  // جزئیات مشتری
-  function openDetail(id) {
-    const l = st.leads.find((x) => x.id === id); if (!l) return;
-    callId = id;
-    $("dName").textContent = l.name;
-    $("dSub").textContent = biz().title + " · " + biz().stages[l.stage] + " · " + l.phone;
-    const c = $("dCall"); c.href = "tel:" + l.phone;
-    const w = $("dWa"); w.href = "https://wa.me/98" + l.phone.slice(1);
-    const d = daysFromNow(l.next);
-    const calls = (l.log || []).filter((x) => x.text.startsWith("تماس")).length;
-    const inStage = Math.max(0, Math.floor((Date.now() - (l.stageSince || Date.now())) / DAY));
-    const prob = [10, 30, 60, 100][l.stage] || 0;
-    const s = $("dStats"); s.textContent = "";
-    [[fa(calls), "تماس ثبت‌شده"], [fa(inStage) + " روز", "در مرحله‌ی فعلی"], [fa(prob) + "٪", "احتمال موفقیت"], [money(l.amount), "مبلغ"]]
-      .forEach(([v, t]) => { const x = el("div"); x.append(el("b", "", v), el("span", "", t)); s.appendChild(x); });
-    const kv = $("dKv"); kv.textContent = "";
-    const items = [["موبایل", l.phone], ["منبع آشنایی", l.source], ["مرحله", biz().stages[l.stage]], ["پیگیری بعدی", jalali(l.next) + (d < 0 ? " (عقب‌افتاده)" : d === 0 ? " (امروز)" : "")]];
-    biz().fields.forEach((f) => { const v = l.extra && l.extra[f.k]; items.push([f.l, f.t === "num" && v ? fa(v) : (v || "—")]); });
-    items.forEach(([k, v]) => { const x = el("div"); x.append(el("span", "", k), el("b", "", String(v))); kv.appendChild(x); });
-    $("dNotes").textContent = l.notes || "توضیحاتی ثبت نشده است. از دکمه‌ی ویرایش می‌توانی اضافه کنی.";
-    const di = $("dInv"); di.textContent = "";
-    const invs = st.invoices.filter((i) => i.leadId === l.id && i.business === l.business).sort((a, b) => b.no - a.no);
-    if (!invs.length) di.appendChild(el("div", "empty", "فاکتوری برای این مشتری نیست."));
-    invs.forEach((i) => { const r = el("div", "tl"); r.append(el("span", "", "ف-" + fd(i.no) + " · " + money(i.amount)), el("small", "", INV_LABEL[invStatus(i)])); di.appendChild(r); });
-    const tl = $("dTimeline"); tl.textContent = "";
-    (l.log || []).slice(0, 30).forEach((e) => { const r = el("div", "tl"); r.append(el("span", "", e.text), el("small", "", jalali(e.t))); tl.appendChild(r); });
-    if (!(l.log || []).length) tl.appendChild(el("div", "empty", "هنوز فعالیتی ثبت نشده است."));
-    openModal("detailModal");
-  }
-  function closeDetail() { closeModal("detailModal"); }
-  $("dClose").addEventListener("click", closeDetail);
-  $("dCallLog").addEventListener("click", () => { closeDetail(); openCall(callId); });
-  $("dEdit").addEventListener("click", () => { closeDetail(); openDrawer(callId); });
-  $("dInvoice").addEventListener("click", () => { const id = callId; closeDetail(); openInvoice(id); });
-  $("dDelete").addEventListener("click", () => {
-    const btn = $("dDelete");
-    if (btn.dataset.armed !== "1") { btn.dataset.armed = "1"; btn.classList.add("confirm"); btn.textContent = "تأیید حذف"; setTimeout(() => { btn.dataset.armed = ""; btn.classList.remove("confirm"); btn.textContent = "حذف"; }, 3000); return; }
-    btn.dataset.armed = ""; btn.classList.remove("confirm"); btn.textContent = "حذف";
-    removeLead(callId);
-  });
-
-  // ---------- ورود و ثبت نام ----------
-  async function hashPw(pw, salt) {
-    const text = salt + ":" + pw;
-    if (window.crypto && window.crypto.subtle && window.TextEncoder) {
-      const buf = await window.crypto.subtle.digest("SHA-256", new window.TextEncoder().encode(text));
-      return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
-    }
-    let h = 5381;
-    for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
-    return "d" + (h >>> 0).toString(16);
-  }
-  const cleanPhone = (v) => toEn(v).replace(/[\s-]/g, "");
-  const findUser = (phone) => st.users.find((u) => u.phone === phone);
-  function setTab(t) {
-    $("loginForm").hidden = t !== "login"; $("signupForm").hidden = t !== "signup";
-    document.querySelectorAll("#authTabs [data-tab]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.tab === t)));
-  }
-  function clearAuthErrors() {
-    document.querySelectorAll("#authBox .field").forEach((f) => { f.classList.remove("bad"); const e = f.querySelector(".err"); if (e) e.textContent = ""; });
-  }
-  function renderAuth() {
-    const u = st.session ? findUser(st.session) : null;
-    $("accountBox").hidden = !u;
-    $("authTabs").hidden = !!u;
-    if (u) {
-      $("loginForm").hidden = true; $("signupForm").hidden = true;
-      $("accText").textContent = "وارد شده‌ای با " + u.name + " (" + u.phone + ")";
-    } else {
-      setTab($("signupForm").hidden ? "login" : "signup");
-    }
-  }
-  function signIn(u) {
-    st.session = u.phone;
-    st.profile = { name: u.name, role: u.role, company: u.company };
-    save(); applyBizUI(); clearAuthErrors(); $("lPw").value = ""; $("sPw").value = ""; $("sPw2").value = "";
-    renderAuth(); openProfile(true); toast("خوش آمدی، " + u.name);
-  }
-  $("authTabs").addEventListener("click", (e) => { const b = e.target.closest("[data-tab]"); if (b) { clearAuthErrors(); setTab(b.dataset.tab); } });
-  $("loginForm").addEventListener("submit", async (e) => {
-    e.preventDefault(); clearAuthErrors();
-    const phone = cleanPhone($("lPhone").value), pw = $("lPw").value;
-    if (!/^09\d{9}$/.test(phone)) { setErr("f-l-phone", "شماره موبایل باید ۱۱ رقم و با 09 شروع شود."); return; }
-    const u = findUser(phone);
-    if (!u) { setErr("f-l-phone", "حسابی با این شماره پیدا نشد. ابتدا ثبت نام کن."); return; }
-    if (!pw) { setErr("f-l-pw", "رمز عبور را وارد کن."); return; }
-    if ((await hashPw(pw, u.salt)) !== u.hash) { setErr("f-l-pw", "رمز عبور درست نیست."); return; }
-    signIn(u);
-  });
-  $("signupForm").addEventListener("submit", async (e) => {
-    e.preventDefault(); clearAuthErrors();
-    const name = $("sName").value.trim(), phone = cleanPhone($("sPhone").value), pw = $("sPw").value, pw2 = $("sPw2").value;
-    let ok = true;
-    if (name.length < 2) { setErr("f-s-name", "نام را حداقل ۲ حرف وارد کن."); ok = false; }
-    if (!/^09\d{9}$/.test(phone)) { setErr("f-s-phone", "شماره موبایل باید ۱۱ رقم و با 09 شروع شود."); ok = false; }
-    else if (findUser(phone)) { setErr("f-s-phone", "با این شماره قبلاً حساب ساخته شده است."); ok = false; }
-    if (pw.length < 6) { setErr("f-s-pw", "رمز عبور حداقل ۶ نویسه باشد."); ok = false; }
-    if (pw2 !== pw) { setErr("f-s-pw2", "رمز عبور و تکرار آن یکی نیستند."); ok = false; }
-    if (!ok) return;
-    const salt = Math.random().toString(36).slice(2, 10);
-    const u = { phone, name, role: "کاربر", company: "", salt, hash: await hashPw(pw, salt) };
-    st.users.push(u);
-    signIn(u);
-  });
-  $("logoutBtn").addEventListener("click", () => {
-    st.session = null; save(); renderAuth(); toast("از حساب خارج شدی.");
-  });
-
-  // پروفایل
-  function openProfile(keepOpen) {
-    if (!keepOpen) { clearAuthErrors(); renderAuth(); }
-    $("pName").value = st.profile.name || ""; $("pRole").value = st.profile.role || ""; $("pCompany").value = st.profile.company || "";
-    openModal("profileModal");
-  }
-  function closeProfile() { closeModal("profileModal"); }
-  $("profileBtn").addEventListener("click", openProfile);
-  $("sideProfile").addEventListener("click", openProfile);
-  $("pClose").addEventListener("click", closeProfile);
-  $("pCancel").addEventListener("click", closeProfile);
-  $("pSave").addEventListener("click", () => {
-    const n = $("pName").value.trim();
-    if (n.length < 2) { toast("نام پروفایل را وارد کن."); return; }
-    st.profile = { name: n, role: $("pRole").value.trim(), company: $("pCompany").value.trim() };
-    const acc = st.session && findUser(st.session);
-    if (acc) Object.assign(acc, { name: st.profile.name, role: st.profile.role, company: st.profile.company });
-    save(); applyBizUI(); closeProfile(); toast("پروفایل ذخیره شد.");
-  });
-
-  // خروجی و تغییر کسب‌وکار
-  function exportCsv() {
-    const rows = [["نام", "موبایل", "منبع", "مرحله", "مبلغ", "پیگیری بعدی"]];
-    myLeads().forEach((l) => rows.push([l.name, l.phone, l.source, biz().stages[l.stage], l.amount, jalali(l.next)]));
-    const csv = "\uFEFF" + rows.map((r) => r.map((c) => '"' + String(c).replace(/"/g, '""') + '"').join(",")).join("\n");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-    a.download = "customers-" + st.business + ".csv";
-    document.body.appendChild(a); a.click(); a.remove();
-    toast("فایل CSV ساخته شد.");
-  }
-  $("exportBtn").addEventListener("click", exportCsv);
-  $("sideExport").addEventListener("click", exportCsv);
-  $("switchBtn").addEventListener("click", () => { $("shell").hidden = true; showStart(); });
-  $("sideSwitch").addEventListener("click", () => { $("shell").hidden = true; showStart(); });
-
-  // ---------- پیام کوتاه ----------
-  let toastTimer = null;
-  function toast(msg, actLabel, actFn, ms) {
-    $("toastMsg").textContent = msg;
-    const b = $("toastAct");
-    if (actLabel) { b.hidden = false; b.textContent = actLabel; b.onclick = () => actFn(); } else { b.hidden = true; b.onclick = null; }
-    $("toast").classList.add("on"); clearTimeout(toastTimer);
-    toastTimer = setTimeout(hideToast, ms || 3200);
-  }
-  function hideToast() { $("toast").classList.remove("on"); }
-
-  // ---------- میان‌برها ----------
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { closeDrawer(); closeCall(); closeDetail(); closeProfile(); return; }
-    if (!st.business || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
-    if (e.key === "/") { e.preventDefault(); $("q").focus(); }
-    if (e.key === "n" || e.key === "N") { e.preventDefault(); openDrawer(null); }
-  });
-
-  // ---------- شروع ----------
-  $("sync").textContent = "ذخیره روی دستگاه";
-  if (st.business && BIZ[st.business]) {
-    ensureSeed(st.business); save();
-    $("start").hidden = true; $("shell").hidden = false;
-    setCollapsed(!!st.ui.collapsed);
-    applyBizUI(); setView("today");
-  } else {
-    showStart();
-  }
-})();
-</script>
+<script src="js/config.js"></script>
+<script src="js/core/ui.js"></script>
+<script src="js/core/store.js"></script>
+<script src="js/core/tools.js"></script>
+<script src="js/features/leadForm.js"></script>
+<script src="js/features/detail.js"></script>
+<script src="js/features/today.js"></script>
+<script src="js/features/notices.js"></script>
+<script src="js/features/customers.js"></script>
+<script src="js/features/invoices.js"></script>
+<script src="js/features/reports.js"></script>
+<script src="js/features/settings.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
