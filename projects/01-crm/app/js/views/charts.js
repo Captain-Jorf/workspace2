@@ -1,12 +1,17 @@
 // نمودارها: داشبورد تصویری (شبیه Power BI) با شاخص‌ها و نمودارهای مرتبط با مشتری، فاکتور و پیگیری.
-import { h } from '../core/dom.js';
-import { toFa, money } from '../core/format.js';
+import { h, clear } from '../core/dom.js';
+import { toFa, toEn, money } from '../core/format.js';
 import { BUSINESSES } from '../config/businesses.js';
 import * as store from '../core/store.js';
 import * as cust from '../domain/customers.js';
 import * as inv from '../domain/invoices.js';
 import { dayDiff } from '../core/jalali.js';
-import { areaChart, funnel, hbars, donut, gauge, kpiTile, chartCard, compact, dailyCounts, PALETTE } from '../features/charts.js';
+import { areaChart, barChart, funnel, hbars, donut, gauge, kpiTile, chartCard, customerReport, compact, dailyCounts, PALETTE } from '../features/charts.js';
+import { customerStats } from '../features/customerStats.js';
+
+// انتخاب مشتری برای گزارش کار نموداری (در حافظه‌ی همین صفحه)
+let pickedId = null;
+let pickQuery = '';
 
 export const meta = {
   label: 'نمودارها',
@@ -33,7 +38,7 @@ function monthlyRevenue(invoices, now) {
   return out;
 }
 
-export function render(root) {
+export function render(root, { refresh = () => {} } = {}) {
   const key = store.get().activeBiz;
   const cfg = BUSINESSES[key];
   const now = Date.now();
@@ -93,7 +98,7 @@ export function render(root) {
 
   const grid = h('div', { class: 'dash-grid' },
     chartCard('قیف فروش', funnel(funnelItems), { wide: true, sub: 'تعداد و مبلغ هر مرحله' }),
-    chartCard('درآمد شش ماه اخیر', areaChart(monthlyRevenue(invoices, now), { height: 180, color: PALETTE[0], fmt: compact }), { wide: true, sub: 'مجموع فاکتورها' }),
+    chartCard('درآمد شش ماه اخیر', areaChart(monthlyRevenue(invoices, now), { height: 180, color: PALETTE[0], fmt: compact }), { wide: true, sub: 'مجموع مبلغ فاکتورهای هر ماه' }),
     chartCard('وضعیت فاکتورها', invoices.length ? donut(statusItems, { center: toFa(invoices.length), sub: 'فاکتور' }) : h('p', { class: 'muted small', text: 'فاکتوری ثبت نشده است.' })),
     chartCard('وصول فاکتورها', h('div', { class: 'gauge-wrap' },
       gauge(paidPct, 'وصول شده'),
@@ -105,10 +110,46 @@ export function render(root) {
       { label: 'آینده', value: follow.upcoming, color: PALETTE[1] },
       { label: 'بدون پیگیری', value: follow.none, color: PALETTE[4] }
     ], { center: toFa(open.length), sub: 'باز' })),
-    chartCard('فعالیت‌ها در ۳۰ روز گذشته', areaChart(activityDaily, { height: 170, color: PALETTE[5], fmt: toFa, labelEvery: 5 }), { wide: true, sub: `${toFa(activities.length)} فعالیت در کل` }),
+    chartCard('فعالیت‌ها در ۳۰ روز گذشته', barChart(activityDaily, { height: 190, color: PALETTE[5], fmt: toFa, labelEvery: 5 }), { wide: true, sub: `هر ستون یک روز؛ جمع کل ${toFa(activities.length)} فعالیت` }),
     chartCard('نوع فعالیت', hbars(typeItems)),
     chartCard('برترین مشتری‌ها از نظر مبلغ', hbars(top, { fmt: (v) => (v ? money(v) : '—') }), { wide: true })
   );
 
+  // انتخاب مشتری و گزارش کار نموداری او
+  const picked = pickedId ? cust.byId(pickedId, key) : null;
+  // مشتری‌هایی که فعالیت و فاکتور بیشتری دارند، اول فهرست می‌آیند
+  const richness = (c) => c.activities.length + inv.forCustomer(c.id, key).length;
+  const sorted = [...all].sort((a, b) => richness(b) - richness(a) || a.name.localeCompare(b.name, 'fa'));
+  const listBox = h('div', { class: 'picker-list' });
+  const drawList = () => {
+    const q = toEn(pickQuery).trim().toLowerCase();
+    const matches = sorted.filter((c) => !q || toEn(`${c.name} ${c.phone}`).toLowerCase().includes(q));
+    clear(listBox);
+    for (const c of matches.slice(0, 16)) {
+      listBox.append(h('button', {
+        class: `chip${pickedId === c.id ? ' on' : ''}`, type: 'button', 'aria-pressed': String(pickedId === c.id),
+        onClick: () => { pickedId = c.id; refresh(); }
+      }, c.name));
+    }
+    if (!matches.length) listBox.append(h('p', { class: 'muted small', text: 'مشتری‌ای با این مشخصات پیدا نشد.' }));
+    else if (matches.length > 16) listBox.append(h('p', { class: 'muted small', text: `${toFa(matches.length - 16)} مورد دیگر؛ نام را جستجو کن.` }));
+  };
+  const search = h('input', {
+    class: 'input', type: 'search', placeholder: 'جستجوی مشتری با نام یا موبایل', 'aria-label': 'جستجوی مشتری',
+    value: pickQuery, onInput: (e) => { pickQuery = e.target.value; drawList(); }
+  });
+  drawList();
+  const pickerBody = h('div', { class: 'picker' },
+    search,
+    listBox,
+    picked
+      ? h('div', { class: 'picked-head' },
+        h('strong', { text: picked.name }),
+        h('span', { class: 'muted small', text: `${picked.phone} · ${cfg.stages[picked.stage]?.label || ''}` }),
+        h('button', { class: 'btn ghost sm', type: 'button', text: 'پاک کردن انتخاب', onClick: () => { pickedId = null; refresh(); } }))
+      : h('p', { class: 'muted small', text: 'یک مشتری را از فهرست انتخاب کن تا گزارش کار نموداری او اینجا نمایش داده شود.' }),
+    picked ? customerReport(customerStats(picked, key, now)) : null);
+
+  root.append(chartCard('گزارش کار هر مشتری', pickerBody, { wide: true, sub: 'انتخاب مشتری و نمودارهای فعالیت، فاکتور و وصول او' }));
   root.append(kpis, grid);
 }

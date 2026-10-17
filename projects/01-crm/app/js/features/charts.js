@@ -35,7 +35,7 @@ function gradient(id, color, top = 0.9, bottom = 0.25) {
 }
 
 /** نمودار ستونی عمودی با برچسب مقدار و تولتیپ */
-export function barChart(items, { height = 190, fmt = compact, color = PALETTE[0] } = {}) {
+export function barChart(items, { height = 190, fmt = compact, color = PALETTE[0], labelEvery = 1 } = {}) {
   const W = 360; const H = height; const pad = { t: 22, b: 30, l: 8, r: 8 };
   const max = Math.max(1, ...items.map((i) => i.value));
   const step = (W - pad.l - pad.r) / Math.max(1, items.length);
@@ -48,7 +48,7 @@ export function barChart(items, { height = 190, fmt = compact, color = PALETTE[0
     const g = el('g', { class: 'bar-col' });
     g.append(el('rect', { x, y, width: w, height: bh, rx: 7, fill: `url(#${gid})`, class: 'cbar' }), titleEl(`${it.label}: ${fmt(it.value)}`));
     g.append(el('text', { x: x + w / 2, y: y - 6, 'text-anchor': 'middle', class: 'val' }, text(fmt(it.value))));
-    g.append(el('text', { x: x + w / 2, y: H - pad.b + 16, 'text-anchor': 'middle', class: 'lbl' }, text(it.label)));
+    if (i % labelEvery === 0 || i === items.length - 1) g.append(el('text', { x: x + w / 2, y: H - pad.b + 16, 'text-anchor': 'middle', class: 'lbl' }, text(it.label)));
     svg.append(g);
   });
   return svg;
@@ -187,13 +187,13 @@ export function customerReport(stats) {
       kpiTile('مانده', compact(due)),
       kpiTile('فعالیت‌ها', toFa(activitiesByType.reduce((s, i) => s + i.value, 0)))),
     h('div', { class: 'dash-grid compact' },
-      chartCard('فعالیت در ۳۰ روز گذشته', daily.some((d) => d.value) ? barChart(daily, { height: 150, fmt: toFa, color: PALETTE[5] }) : h('p', { class: 'muted small', text: 'در ۳۰ روز گذشته فعالیتی ثبت نشده است.' }), { wide: true }),
+      chartCard('فعالیت در ۳۰ روز گذشته', daily.some((d) => d.value) ? barChart(daily, { height: 160, fmt: toFa, color: PALETTE[5], labelEvery: 5 }) : h('p', { class: 'muted small', text: 'در ۳۰ روز گذشته فعالیتی ثبت نشده است.' }), { wide: true, sub: 'هر ستون یک روز است؛ عدد بالای ستون تعداد فعالیت همان روز' }),
       chartCard('نوع فعالیت', hbars(activitiesByType)),
       chartCard('وضعیت فاکتورها', invoices ? donut(statusItems, { center: toFa(invoices), sub: 'فاکتور' }) : h('p', { class: 'muted small', text: 'فاکتوری ثبت نشده است.' })),
       chartCard('وصول مبلغ فاکتورها', gauge(paidPct, 'وصول شده'))));
 }
 
-const dayFmtFa = new Intl.DateTimeFormat('fa-IR', { day: 'numeric' });
+const dayFmtFa = new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'short' });
 /** شمارش رویدادها برای n روز اخیر؛ هر روز یک نقطه/ستون */
 export function dailyCounts(times, days, now = Date.now()) {
   const d0 = new Date(now); d0.setHours(0, 0, 0, 0);

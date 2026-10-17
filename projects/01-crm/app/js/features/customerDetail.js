@@ -10,7 +10,8 @@ import * as inv from '../domain/invoices.js';
 import { openDialog, confirmDialog } from '../ui/dialog.js';
 import { toast } from '../ui/toast.js';
 import { field, select, applyErrors, bindCtrlEnter } from './forms.js';
-import { customerReport, dailyCounts, PALETTE } from './charts.js';
+import { customerReport } from './charts.js';
+import { customerStats } from './customerStats.js';
 import { openCustomerForm, FOLLOW_OPTIONS, followUpFrom } from './customerForm.js';
 import { openInvoiceForm } from './invoiceForm.js';
 
@@ -148,18 +149,7 @@ export function openCustomerDetail(id, { onChange = () => {} } = {}) {
     onChange();
   } }, 'ذخیره‌ی توضیحات') : null;
 
-  const sumOf = (list, f) => list.reduce((s, x) => s + f(x), 0);
-  const statusKeys = ['draft', 'pending', 'overdue', 'paid'];
-  const statusItems = statusKeys.map((k, idx) => ({ label: inv.STATUS_LABEL[k], value: invoices.filter((x) => inv.invoiceStatus(x) === k).length, color: PALETTE[[0, 2, 3, 1][idx]] }));
-  const reportStats = {
-    invoices: invoices.length,
-    total: sumOf(invoices, (x) => inv.totals(x).total),
-    paid: sumOf(invoices, (x) => inv.totals(x).paid),
-    due,
-    statusItems,
-    activitiesByType: cust.ACTIVITY_TYPES.map((t) => ({ label: t.label, value: c.activities.filter((a) => a.type === t.id).length })),
-    daily: dailyCounts(c.activities.map((a) => a.at), 30)
-  };
+  const reportStats = customerStats(c, key);
   const body = h('div', { class: 'detail' },
     h('section', { class: 'dsec' }, h('h3', { text: 'گزارش کار' }), customerReport(reportStats)),
     summary,

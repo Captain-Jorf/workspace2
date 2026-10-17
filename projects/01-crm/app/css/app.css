@@ -418,3 +418,6 @@ html[dir='ltr'] .title-row, html[dir='ltr'] .top-tools { direction: ltr; }
 .share { display: flex; align-items: center; gap: 10px; min-width: 150px; }
 .share .bar { flex: 1; }
 .share-num { min-width: 42px; text-align: start; font-variant-numeric: tabular-nums; }
+.picker { display: flex; flex-direction: column; gap: 12px; }
+.picker-list { display: flex; flex-wrap: wrap; gap: 8px; max-height: 150px; overflow: auto; padding: 2px; }
+.picked-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 8px 12px; border-radius: 14px; background: var(--accent-soft); }
