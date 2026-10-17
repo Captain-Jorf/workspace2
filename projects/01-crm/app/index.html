@@ -204,6 +204,12 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
   .fixed-note { white-space:normal; text-align:center; width:92%; border-radius:16px; }
 }
 @media (prefers-reduced-motion:reduce) { * { transition:none !important; animation:none !important; } }
+.row-head { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+.notes-box { padding:12px 14px; border-radius:14px; background:rgba(255,255,255,.5); border:1px solid var(--line); font-size:14px; line-height:1.9; white-space:pre-wrap; min-height:44px; }
+.st { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; background:rgba(255,255,255,.7); border:1px solid var(--line); white-space:nowrap; }
+.st.overdue { color:var(--danger); border-color:var(--danger); }
+.st.paid { color:#2f7d4f; }
+.st.draft { color:var(--muted); }
 </style>
 </head>
 <body>
@@ -222,6 +228,7 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
     <button class="nav" type="button" data-view="today" aria-current="page"><span class="ic">◉</span><span class="label">امروز</span><span class="badge" id="badgeToday">۰</span></button>
     <button class="nav" type="button" data-view="notices"><span class="ic">✉</span><span class="label">اطلاعیه‌ها</span></button>
     <button class="nav" type="button" data-view="customers"><span class="ic">☷</span><span class="label">مشتری‌ها</span></button>
+    <button class="nav" type="button" data-view="invoices"><span class="ic">▤</span><span class="label">فاکتورها</span></button>
     <button class="nav" type="button" data-view="reports"><span class="ic">▥</span><span class="label">گزارش‌ها</span></button>
     <div class="sep"></div>
     <button class="nav" type="button" id="sideProfile"><span class="ic">☺</span><span class="label">پروفایل</span></button>
@@ -281,6 +288,18 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
       </div>
     </section>
 
+    <!-- فاکتورها -->
+    <section class="view" id="v-invoices" aria-label="فاکتورها">
+      <div class="kpis" id="kpisInv"></div>
+      <div class="row-head"><div class="section-title">فاکتورهای این کسب‌وکار</div><button class="btn primary" id="newInv" type="button">فاکتور جدید</button></div>
+      <div class="glass table-wrap">
+        <table>
+          <thead><tr><th>شماره</th><th>مشتری</th><th>تاریخ صدور</th><th>سررسید</th><th>مبلغ</th><th>وضعیت</th><th>عملیات</th></tr></thead>
+          <tbody id="invBody"></tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- گزارش‌ها -->
     <section class="view" id="v-reports" aria-label="گزارش‌ها">
       <div class="kpis" id="kpisReports"></div>
@@ -308,6 +327,7 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
     <div class="field"><label for="stage">مرحله</label><select id="stage" class="input"></select></div>
     <div class="field" id="f-amount"><label for="amount">مبلغ (تومان)</label><input id="amount" class="input" type="text" inputmode="numeric"><div class="hint">برای مراحل پیشرفته‌تر الزامی است.</div><div class="err" role="alert"></div></div>
     <div id="extraFields"></div>
+    <div class="field"><label for="notes">توضیحات</label><textarea id="notes" class="input area" placeholder="هر نکته‌ای که برای این مشتری لازم است"></textarea></div>
     <div class="field"><label for="next">پیگیری بعدی</label>
       <select id="next" class="input"><option value="1">فردا</option><option value="2" selected>۲ روز دیگر (پیشنهادی)</option><option value="7">یک هفته دیگر</option><option value="14">دو هفته دیگر</option></select></div>
   </form>
@@ -346,12 +366,17 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
     <a class="btn wa" id="dWa" href="#" target="_blank" rel="noopener">واتساپ</a>
     <button class="btn" id="dCallLog" type="button">ثبت تماس</button>
     <button class="btn" id="dEdit" type="button">ویرایش</button>
+    <button class="btn" id="dInvoice" type="button">فاکتور جدید</button>
     <button class="btn danger" id="dDelete" type="button">حذف</button>
   </div>
   <h3>گزارش این مشتری</h3>
   <div class="stats" id="dStats"></div>
   <h3>مشخصات</h3>
   <div class="kv" id="dKv"></div>
+  <h3>توضیحات</h3>
+  <div class="notes-box" id="dNotes"></div>
+  <h3>فاکتورهای این مشتری</h3>
+  <div class="timeline" id="dInv"></div>
   <h3>تاریخچه‌ی فعالیت</h3>
   <div class="timeline" id="dTimeline"></div>
 </div>
@@ -366,6 +391,20 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
     <div class="field" style="margin-top:10px"><label for="pCompany">نام کسب‌وکار</label><input id="pCompany" class="input" type="text"></div>
   </form>
   <footer><button id="pSave" class="btn primary lg" type="button">ذخیره‌ی پروفایل</button><button id="pCancel" class="btn ghost" type="button">انصراف</button></footer>
+</div>
+
+<!-- فاکتور جدید -->
+<div id="invModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="invTitle" aria-hidden="true">
+  <header><h2 id="invTitle">فاکتور جدید</h2><button id="invClose" class="icon" type="button" aria-label="بستن">✕</button></header>
+  <div class="sub">فاکتور روی همین دستگاه ثبت می‌شود.</div>
+  <form id="invForm" novalidate>
+    <div class="field" id="f-inv-cust"><label for="invCust">مشتری</label><select id="invCust" class="input"></select><div class="err" role="alert"></div></div>
+    <div class="field" id="f-inv-amt" style="margin-top:10px"><label for="invAmt">مبلغ (تومان)</label><input id="invAmt" class="input" type="text" inputmode="numeric"><div class="err" role="alert"></div></div>
+    <div class="field" style="margin-top:10px"><label for="invDue">مهلت پرداخت</label><select id="invDue" class="input"><option value="7">۷ روز</option><option value="14" selected>۱۴ روز</option><option value="30">۳۰ روز</option></select></div>
+    <div class="field" style="margin-top:10px"><label for="invStatus">وضعیت</label><select id="invStatus" class="input"><option value="issued">صادر شده</option><option value="draft">پیش‌نویس</option></select></div>
+    <div class="field" style="margin-top:10px"><label for="invNotes">توضیحات فاکتور</label><textarea id="invNotes" class="input area"></textarea></div>
+  </form>
+  <footer><button id="invSave" class="btn primary lg" type="button">ثبت فاکتور</button><button id="invCancel" class="btn ghost" type="button">انصراف</button></footer>
 </div>
 
 <div id="toast" class="glass toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastAct" class="btn sm" type="button" hidden></button></div>
@@ -434,7 +473,8 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
     const jd = 1 + (days < 186 ? days % 31 : (days - 186) % 30);
     return [jy, jm, jd];
   }
-  const jalali = (ts) => { const d = new Date(ts); const [y, m, day] = g2j(d.getFullYear(), d.getMonth() + 1, d.getDate()); return fa(day) + " " + JM[m - 1] + " " + fa(y); };
+  const fdig = (n) => String(n).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
+  const jalali = (ts) => { const d = new Date(ts); const [y, m, day] = g2j(d.getFullYear(), d.getMonth() + 1, d.getDate()); return fdig(day) + " " + JM[m - 1] + " " + fdig(y); };
 
   // ---------- وضعیت و داده ----------
   let st = null;
@@ -442,6 +482,8 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
   if (!st || !Array.isArray(st.leads)) st = { business: null, leads: [], nextId: 1, profile: { name: "کاربر دمو", role: "مدیر فروش", company: "" }, ui: { collapsed: false } };
   st.ui = st.ui || { collapsed: false };
   st.profile = st.profile || { name: "کاربر دمو", role: "مدیر فروش", company: "" };
+  st.invoices = Array.isArray(st.invoices) ? st.invoices : [];
+  st.nextInv = st.nextInv || 1;
 
   function seedFor(b) {
     const cfg = BIZ[b], now = Date.now();
@@ -454,7 +496,20 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
         next: now + OFFSETS[i] * DAY, extra, log: [{ t: now - DAY * 5, text: "اطلاعیه ثبت شد" }] };
     });
   }
-  function ensureSeed(b) { if (!st.leads.some((l) => l.business === b)) st.leads.push(...seedFor(b)); }
+  function ensureSeed(b) {
+    if (!st.leads.some((l) => l.business === b)) st.leads.push(...seedFor(b));
+    if (!st.invoices.some((i) => i.business === b)) seedInvoices(b);
+  }
+  function seedInvoices(b) {
+    const now = Date.now(), list = st.leads.filter((l) => l.business === b);
+    const pat = [{ i: 1, age: 4 }, { i: 2, age: 30 }, { i: 3, age: 20, paid: 5 }, { i: 4, age: 6 }, { i: 5, age: 2 }];
+    pat.forEach((p) => {
+      const l = list[p.i]; if (!l || !l.amount) return;
+      const issued = now - DAY * p.age;
+      st.invoices.push({ no: st.nextInv++, business: b, leadId: l.id, custName: l.name, amount: l.amount,
+        issued, due: issued + 14 * DAY, paid: p.paid ? issued + p.paid * DAY : null, draft: false, notes: "" });
+    });
+  }
   const biz = () => BIZ[st.business];
   const myLeads = () => st.leads.filter((l) => l.business === st.business);
   function save() { localStorage.setItem(KEY, JSON.stringify(st)); $("sync").textContent = "ذخیره شد · روی دستگاه"; }
@@ -473,10 +528,14 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
       default: return true;
     }
   }
+  const fd = (n) => String(n).padStart(3, "0").replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
+  const invStatus = (i) => i.draft ? "draft" : i.paid ? "paid" : i.due < Date.now() ? "overdue" : "issued";
+  const INV_LABEL = { draft: "پیش‌نویس", issued: "صادر شده", overdue: "معوق", paid: "پرداخت شده" };
+  const myInvoices = () => st.invoices.filter((i) => i.business === st.business).sort((a, b) => b.no - a.no);
   const visible = () => myLeads().filter((l) => matchSearch(l) && matchFilter(l));
 
   // ---------- پوسته و ناوبری ----------
-  const VIEW_TITLE = { today: "امروز", notices: "اطلاعیه‌ها", customers: "مشتری‌ها", reports: "گزارش‌ها" };
+  const VIEW_TITLE = { today: "امروز", notices: "اطلاعیه‌ها", customers: "مشتری‌ها", invoices: "فاکتورها", reports: "گزارش‌ها" };
   function setView(v) {
     view = v;
     document.querySelectorAll(".nav[data-view]").forEach((b) => b.setAttribute("aria-current", b.dataset.view === v ? "page" : "false"));
@@ -540,6 +599,7 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
     if (view === "today") renderToday(due);
     if (view === "notices") renderNotices();
     if (view === "customers") renderCustomers();
+    if (view === "invoices") renderInvoices();
     if (view === "reports") renderReports();
   }
 
@@ -595,7 +655,7 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
   function card(l) {
     const c = el("article", "glass card-lead"); c.tabIndex = 0; c.draggable = true; c.dataset.id = l.id;
     const d = daysFromNow(l.next);
-    const nm = el("div", "nm", l.name); nm.addEventListener("click", () => openDetail(l.id));
+    const nm = el("div", "nm", l.name);
     c.append(nm, el("div", "meta", l.phone + " · " + l.source), el("div", "amt", money(l.amount)));
     c.appendChild(el("div", d < 0 ? "over" : d === 0 ? "today" : "meta", (d < 0 ? "عقب‌افتاده" : d === 0 ? "امروز" : "پیگیری") + " · " + jalali(l.next)));
     const row = el("div", "row");
@@ -606,6 +666,7 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
     const del = el("button", "btn sm danger", "حذف"); del.type = "button"; del.setAttribute("aria-label", "حذف " + l.name);
     del.addEventListener("click", () => askDelete(l.id, del));
     row.append(sel, call, del); c.appendChild(row);
+    c.addEventListener("click", (e) => { if (!e.target.closest("button,select,a,textarea")) openDetail(l.id); });
     c.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/plain", String(l.id)); c.style.opacity = ".5"; });
     c.addEventListener("dragend", () => { c.style.opacity = ""; });
     c.addEventListener("keydown", (e) => {
@@ -651,6 +712,84 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
       host.appendChild(r);
     });
   }
+
+  function renderInvoices() {
+    const all = myInvoices(), active = all.filter((i) => !i.draft), unpaid = active.filter((i) => !i.paid);
+    const sum = (a) => a.reduce((s, i) => s + i.amount, 0);
+    const paid = sum(active.filter((i) => i.paid)), overdue = unpaid.filter((i) => i.due < Date.now());
+    const k = $("kpisInv"); k.textContent = "";
+    [["فاکتورهای صادر شده", fa(active.length), "بدون پیش‌نویس"], ["وصول‌شده", fa(Math.round(paid / 1e6)) + " م", "میلیون تومان"],
+     ["مانده‌ی وصول‌نشده", fa(Math.round(sum(unpaid) / 1e6)) + " م", "میلیون تومان"], ["معوق", fa(overdue.length), "گذشته از سررسید"]
+    ].forEach(([l, v, s]) => { const c = el("div", "glass kpi"); c.append(el("span", "lbl", l), el("b", "", v), el("small", "", s)); k.appendChild(c); });
+
+    const body = $("invBody"); body.textContent = "";
+    all.forEach((i) => {
+      const key = invStatus(i);
+      const tr = el("tr");
+      if (st.leads.some((x) => x.id === i.leadId)) tr.addEventListener("click", () => openDetail(i.leadId));
+      const acts = el("td"), wrap = el("div", "btns");
+      if (!i.paid && !i.draft) {
+        const pb = el("button", "btn sm primary", "ثبت پرداخت"); pb.type = "button";
+        pb.addEventListener("click", (e) => { e.stopPropagation(); markPaid(i.no); });
+        wrap.appendChild(pb);
+      }
+      const db = el("button", "btn sm danger", "حذف"); db.type = "button";
+      db.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (db.dataset.armed !== "1") { db.dataset.armed = "1"; db.textContent = "تأیید حذف"; db.classList.add("confirm"); return; }
+        deleteInv(i.no);
+      });
+      wrap.appendChild(db); acts.appendChild(wrap);
+      const stc = el("td"); stc.appendChild(el("span", "st " + key, INV_LABEL[key]));
+      tr.append(el("td", "", "ف-" + fd(i.no)), el("td", "", i.custName), el("td", "", jalali(i.issued)), el("td", "", jalali(i.due)),
+        el("td", "", money(i.amount)), stc, acts);
+      body.appendChild(tr);
+    });
+    if (!all.length) { const tr = el("tr"); const td = el("td", "empty", "هنوز فاکتوری ثبت نشده است."); td.colSpan = 7; tr.appendChild(td); body.appendChild(tr); }
+  }
+  function markPaid(no) {
+    const inv = st.invoices.find((x) => x.no === no && x.business === st.business); if (!inv) return;
+    inv.paid = Date.now();
+    const l = st.leads.find((x) => x.id === inv.leadId); if (l) note(l, "فاکتور ف-" + fd(inv.no) + " پرداخت شد");
+    save(); render(); toast("پرداخت فاکتور ثبت شد.");
+  }
+  function deleteInv(no) {
+    st.invoices = st.invoices.filter((x) => !(x.no === no && x.business === st.business));
+    save(); render(); toast("فاکتور حذف شد.");
+  }
+
+  // ---------- فاکتور جدید ----------
+  function openInvoice(leadId) {
+    const list = myLeads();
+    if (!list.length) { toast("ابتدا یک مشتری ثبت کن."); return; }
+    const sel = $("invCust"); sel.textContent = "";
+    list.forEach((l) => { const o = el("option", "", l.name); o.value = String(l.id); sel.appendChild(o); });
+    if (leadId) sel.value = String(leadId);
+    const l = leadId ? st.leads.find((x) => x.id === leadId) : null;
+    $("invAmt").value = l && l.amount ? fa(l.amount) : "";
+    $("invDue").value = "14"; $("invStatus").value = "issued"; $("invNotes").value = "";
+    document.querySelectorAll("#invForm .field").forEach((f) => { f.classList.remove("bad"); const e = f.querySelector(".err"); if (e) e.textContent = ""; });
+    openModal("invModal");
+  }
+  function closeInv() { closeModal("invModal"); }
+  $("newInv").addEventListener("click", () => openInvoice(null));
+  $("invClose").addEventListener("click", closeInv);
+  $("invCancel").addEventListener("click", closeInv);
+  $("invSave").addEventListener("click", () => {
+    const leadId = Number($("invCust").value);
+    const l = st.leads.find((x) => x.id === leadId);
+    if (!l) { setErr("f-inv-cust", "مشتری را انتخاب کن."); return; }
+    setErr("f-inv-cust", "");
+    const raw = readNum($("invAmt").value), amount = Number(raw);
+    if (!/^\d+$/.test(raw) || amount <= 0) { setErr("f-inv-amt", "مبلغ را فقط با عدد مثبت وارد کن."); return; }
+    setErr("f-inv-amt", "");
+    const inv = { no: st.nextInv++, business: st.business, leadId, custName: l.name, amount,
+      issued: Date.now(), due: Date.now() + Number($("invDue").value) * DAY, paid: null,
+      draft: $("invStatus").value === "draft", notes: $("invNotes").value.trim() };
+    st.invoices.push(inv);
+    note(l, "فاکتور ف-" + fd(inv.no) + " " + (inv.draft ? "به‌صورت پیش‌نویس ثبت شد" : "صادر شد") + " · " + money(amount));
+    save(); closeInv(); render(); toast("فاکتور ف-" + fd(inv.no) + " ثبت شد.");
+  });
 
   // ---------- عملیات ----------
   function moveLead(id, stage, keepFocus) {
@@ -707,12 +846,13 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
     $("source").value = l ? l.source : ""; $("stage").value = l ? String(l.stage) : "0";
     $("amount").value = l && l.amount ? fa(l.amount) : ""; $("next").value = "2";
     renderExtra(l ? l.extra : null);
+    $("notes").value = l ? (l.notes || "") : "";
     document.querySelectorAll("#form .field").forEach((f) => { f.classList.remove("bad"); const e = f.querySelector(".err"); if (e) e.textContent = ""; });
     $("drawer").classList.add("on"); $("drawer").setAttribute("aria-hidden", "false"); $("scrim").classList.add("on");
     setTimeout(() => $("name").focus(), 50);
     if (requireAmount) { $("stage").value = "2"; $("amount").focus(); }
   }
-  function closeDrawer() { $("drawer").classList.remove("on"); $("drawer").setAttribute("aria-hidden", "true"); if (!isOpen("callModal") && !isOpen("detailModal") && !isOpen("profileModal")) $("scrim").classList.remove("on"); }
+  function closeDrawer() { $("drawer").classList.remove("on"); $("drawer").setAttribute("aria-hidden", "true"); if (!isOpen("callModal") && !isOpen("detailModal") && !isOpen("profileModal") && !isOpen("invModal")) $("scrim").classList.remove("on"); }
   function setErr(f, msg) { const n = $(f); n.classList.toggle("bad", !!msg); n.querySelector(".err").textContent = msg || ""; }
   const readNum = (s) => { const r = toEn(s).replace(/[,٬\s]/g, ""); return r; };
   function validate() {
@@ -733,7 +873,7 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
       const inp = $("x_" + f.k); const v = inp ? inp.value.trim() : "";
       extra[f.k] = f.t === "num" ? Number(readNum(v) || 0) : v;
     });
-    return ok ? { name, phone, stage, amount, source: $("source").value, days: Number($("next").value), extra } : null;
+    return ok ? { name, phone, stage, amount, source: $("source").value, days: Number($("next").value), extra, notes: $("notes").value.trim() } : null;
   }
   $("form").addEventListener("submit", (e) => {
     e.preventDefault();
@@ -742,10 +882,10 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
     let t;
     if (editingId) {
       t = st.leads.find((x) => x.id === editingId);
-      Object.assign(t, { name: v.name, phone: v.phone, stage: v.stage, amount: v.amount, source: v.source, next, extra: v.extra });
+      Object.assign(t, { name: v.name, phone: v.phone, stage: v.stage, amount: v.amount, source: v.source, next, extra: v.extra, notes: v.notes });
       note(t, "اطلاعات ویرایش شد");
     } else {
-      t = { id: st.nextId++, business: st.business, name: v.name, phone: v.phone, stage: v.stage, stageSince: Date.now(), amount: v.amount, source: v.source, next, extra: v.extra, log: [] };
+      t = { id: st.nextId++, business: st.business, name: v.name, phone: v.phone, stage: v.stage, stageSince: Date.now(), amount: v.amount, source: v.source, next, extra: v.extra, notes: v.notes, log: [] };
       note(t, "اطلاعیه ثبت شد");
       st.leads.push(t);
     }
@@ -756,12 +896,12 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
   $("newCustomer").addEventListener("click", () => openDrawer(null));
   $("closeBtn").addEventListener("click", closeDrawer);
   $("cancelBtn").addEventListener("click", closeDrawer);
-  $("scrim").addEventListener("click", () => { closeDrawer(); closeCall(); closeDetail(); closeProfile(); });
+  $("scrim").addEventListener("click", () => { closeDrawer(); closeCall(); closeDetail(); closeProfile(); closeInv(); });
 
   // ---------- پنجره‌ها ----------
   function isOpen(id) { return $(id).classList.contains("on"); }
   function openModal(id) { $(id).classList.add("on"); $(id).setAttribute("aria-hidden", "false"); $("scrim").classList.add("on"); }
-  function closeModal(id) { $(id).classList.remove("on"); $(id).setAttribute("aria-hidden", "true"); if (!["drawer", "callModal", "detailModal", "profileModal"].some((x) => x !== id && isOpen(x))) $("scrim").classList.remove("on"); }
+  function closeModal(id) { $(id).classList.remove("on"); $(id).setAttribute("aria-hidden", "true"); if (!["drawer", "callModal", "detailModal", "profileModal", "invModal"].some((x) => x !== id && isOpen(x))) $("scrim").classList.remove("on"); }
 
   // ثبت نتیجه‌ی تماس
   function openCall(id) {
@@ -807,6 +947,11 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
     const items = [["موبایل", l.phone], ["منبع آشنایی", l.source], ["مرحله", biz().stages[l.stage]], ["پیگیری بعدی", jalali(l.next) + (d < 0 ? " (عقب‌افتاده)" : d === 0 ? " (امروز)" : "")]];
     biz().fields.forEach((f) => { const v = l.extra && l.extra[f.k]; items.push([f.l, f.t === "num" && v ? fa(v) : (v || "—")]); });
     items.forEach(([k, v]) => { const x = el("div"); x.append(el("span", "", k), el("b", "", String(v))); kv.appendChild(x); });
+    $("dNotes").textContent = l.notes || "توضیحاتی ثبت نشده است. از دکمه‌ی ویرایش می‌توانی اضافه کنی.";
+    const di = $("dInv"); di.textContent = "";
+    const invs = st.invoices.filter((i) => i.leadId === l.id && i.business === l.business).sort((a, b) => b.no - a.no);
+    if (!invs.length) di.appendChild(el("div", "empty", "فاکتوری برای این مشتری نیست."));
+    invs.forEach((i) => { const r = el("div", "tl"); r.append(el("span", "", "ف-" + fd(i.no) + " · " + money(i.amount)), el("small", "", INV_LABEL[invStatus(i)])); di.appendChild(r); });
     const tl = $("dTimeline"); tl.textContent = "";
     (l.log || []).slice(0, 30).forEach((e) => { const r = el("div", "tl"); r.append(el("span", "", e.text), el("small", "", jalali(e.t))); tl.appendChild(r); });
     if (!(l.log || []).length) tl.appendChild(el("div", "empty", "هنوز فعالیتی ثبت نشده است."));
@@ -816,6 +961,7 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
   $("dClose").addEventListener("click", closeDetail);
   $("dCallLog").addEventListener("click", () => { closeDetail(); openCall(callId); });
   $("dEdit").addEventListener("click", () => { closeDetail(); openDrawer(callId); });
+  $("dInvoice").addEventListener("click", () => { const id = callId; closeDetail(); openInvoice(id); });
   $("dDelete").addEventListener("click", () => {
     const btn = $("dDelete");
     if (btn.dataset.armed !== "1") { btn.dataset.armed = "1"; btn.classList.add("confirm"); btn.textContent = "تأیید حذف"; setTimeout(() => { btn.dataset.armed = ""; btn.classList.remove("confirm"); btn.textContent = "حذف"; }, 3000); return; }
