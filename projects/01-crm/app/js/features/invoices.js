@@ -60,8 +60,8 @@
       if (!inv.draft && store.invRemaining(inv) > 0) btn("ثبت پرداخت", "primary", () => openPay(inv.no));
       btn("ویرایش", "", () => openForm(inv.no, null));
       btn("کپی", "", () => copyInvoice(inv.no));
-      btn("چاپ / PDF", "", () => printInvoice(inv.no));
-      btn("عکس", "", (b) => shareImage(inv.no, b));
+      btn("چاپ", "", () => printInvoice(inv.no));
+      btn("اشتراک گذاری", "", (b) => shareImage(inv.no, b));
       btn("حذف", "danger", (b) => {
         if (b.dataset.armed !== "1") {
           b.dataset.armed = "1";
@@ -198,6 +198,13 @@
     UI.printHtml(CRM.tools.invoiceHtml(inv, bizTitle()));
   }
 
+  let sharePending = null;
+  let previewUrl = null;
+
+  function canSendFile(file) {
+    return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [file] }));
+  }
+
   function shareImage(no, button) {
     const inv = S().state.invoices.find((i) => i.no === no);
     if (!inv) return;
@@ -206,13 +213,32 @@
     CRM.tools.invoiceImage(inv, bizTitle()).then((blob) => {
       if (button) button.disabled = false;
       const file = new File([blob], name, { type: "image/png" });
-      if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-        navigator.share({ files: [file], title: UI.padInvoiceNo(inv.no) }).catch(() => {});
-        return;
-      }
-      UI.download(name, blob);
-      UI.toast("عکس فاکتور ساخته و دانلود شد.");
+      sharePending = { blob, name, file, title: UI.padInvoiceNo(inv.no) };
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      previewUrl = URL.createObjectURL(blob);
+      $("shPreview").src = previewUrl;
+      $("shSub").textContent = UI.padInvoiceNo(inv.no) + " · " + inv.custName + " · عکس ساخته شد. یکی از گزینه‌ها را انتخاب کن.";
+      $("shSend").disabled = !canSendFile(file);
+      $("shSendHint").textContent = canSendFile(file) ? "" : "این دستگاه ارسال مستقیم عکس را پشتیبانی نمی‌کند؛ عکس را دانلود کن و از همان‌جا بفرست.";
+      UI.openPanel("shareModal");
     });
+  }
+
+  function sendPending() {
+    if (!sharePending || !canSendFile(sharePending.file)) return;
+    navigator.share({ files: [sharePending.file], title: sharePending.title })
+      .then(() => UI.closePanel("shareModal"))
+      .catch(() => {});
+  }
+
+  function downloadPending() {
+    if (!sharePending) return;
+    UI.download(sharePending.name, sharePending.blob);
+    UI.toast("عکس فاکتور دانلود شد.");
+  }
+
+  function closeShare() {
+    UI.closePanel("shareModal");
   }
 
   function removeInvoice(no) {
@@ -242,6 +268,10 @@
   $("invSave").addEventListener("click", saveForm);
   $("payClose").addEventListener("click", () => UI.closePanel("payModal"));
   $("payCancel").addEventListener("click", () => UI.closePanel("payModal"));
+  $("shSend").addEventListener("click", sendPending);
+  $("shDownload").addEventListener("click", downloadPending);
+  $("shCancel").addEventListener("click", closeShare);
+  $("shClose").addEventListener("click", closeShare);
   $("paySave").addEventListener("click", () => recordPayment(false));
   $("payFull").addEventListener("click", () => recordPayment(true));
 

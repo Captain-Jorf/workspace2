@@ -4,7 +4,7 @@
   const DIGITS_FA = "۰۱۲۳۴۵۶۷۸۹";
   const DIGITS_AR = "٠١٢٣٤٥٦٧٨٩";
   const DAY = CRM.config.DAY;
-  const PANELS = ["drawer", "callModal", "remindModal", "detailModal", "invModal", "payModal", "mergeModal", "colsModal", "importModal", "settingsModal"];
+  const PANELS = ["drawer", "callModal", "remindModal", "detailModal", "invModal", "payModal", "shareModal", "mergeModal", "colsModal", "importModal", "settingsModal"];
 
   const $ = (id) => document.getElementById(id);
 
