@@ -471,7 +471,7 @@ html:not([data-theme="dark"]) .palette-item.on { background: var(--accent-soft);
 .cw-name { font-size: 13px; line-height: 1.3; }
 
 /* ===== مرحله ۱ بازنویسی: منوی ثابت سمت راست در دسکتاپ ===== */
-@media (min-width: 901px) {
+@media (min-width: 761px) {
   .shell { display: grid; grid-template-columns: 248px minmax(0, 1fr); align-items: start; }
   .side {
     position: sticky; top: 12px; right: auto; height: calc(100vh - 24px); width: auto; z-index: 5;
