@@ -51,7 +51,6 @@
     items.forEach(([k, v]) => { const x = UI.el("div"); x.append(UI.el("span", "", k), UI.el("b", "", String(v))); kv.appendChild(x); });
 
     $("dNotes").textContent = lead.notes || "توضیحاتی ثبت نشده است. از دکمه‌ی ویرایش می‌توانی اضافه کنی.";
-    $("dManager").textContent = lead.managerNote || "یادداشتی ثبت نشده است. فقط تو این را می‌بینی.";
 
     const di = $("dInv");
     di.textContent = "";
@@ -59,7 +58,7 @@
     if (!invs.length) di.appendChild(UI.el("div", "empty", "فاکتوری برای این مشتری نیست."));
     invs.forEach((inv) => {
       const r = UI.el("div", "tl");
-      r.append(UI.el("span", "", UI.padInvoiceNo(inv.no) + " · " + UI.money(inv.amount)), UI.el("small", "", store.INV_LABEL[store.invStatus(inv)]));
+      r.append(UI.el("span", "", store.invCode(inv) + " · " + UI.money(inv.amount)), UI.el("small", "", store.INV_LABEL[store.invStatus(inv)]));
       di.appendChild(r);
     });
 

@@ -72,7 +72,7 @@
         removeInvoice(inv.no);
       });
       acts.appendChild(wrap);
-      tr.append(UI.el("td", "", UI.padInvoiceNo(inv.no)), UI.el("td", "", inv.custName), UI.el("td", "", UI.jalali(inv.issued)),
+      tr.append(UI.el("td", "", S().invCode(inv)), UI.el("td", "", inv.custName), UI.el("td", "", UI.jalali(inv.issued)),
         UI.el("td", "", UI.jalali(inv.due)), UI.el("td", "", UI.money(inv.amount)), stc, acts);
       body.appendChild(tr);
     });
@@ -109,7 +109,7 @@
     }
     const inv = no ? store.state.invoices.find((i) => i.no === no) : null;
     editingNo = inv ? inv.no : null;
-    $("invTitle").textContent = inv ? "ویرایش " + UI.padInvoiceNo(inv.no) : "فاکتور جدید";
+    $("invTitle").textContent = inv ? "ویرایش " + S().invCode(inv) : "فاکتور جدید";
     fillCustomers(inv ? inv.leadId : leadId);
     const lead = inv ? store.leadById(inv.leadId) : store.leadById(leadId);
     $("invAmt").value = inv ? UI.groupFa(inv.amount) : lead && lead.amount ? UI.groupFa(lead.amount) : "";
@@ -137,11 +137,11 @@
       const inv = store.state.invoices.find((i) => i.no === editingNo);
       if (inv) {
         Object.assign(inv, { leadId, custName: lead.name, amount, due: inv.issued + days * UI.DAY, draft, notes });
-        store.note(lead, "فاکتور " + UI.padInvoiceNo(inv.no) + " ویرایش شد");
+        store.note(lead, "فاکتور " + S().invCode(inv) + " ویرایش شد");
       }
     } else {
       const inv = store.addInvoice({ business: store.state.business, leadId, custName: lead.name, amount, issued: Date.now(), due: Date.now() + days * UI.DAY, draft, notes });
-      store.note(lead, "فاکتور " + UI.padInvoiceNo(inv.no) + (draft ? " به‌صورت پیش‌نویس ثبت شد" : " صادر شد") + " · " + UI.money(amount));
+      store.note(lead, "فاکتور " + S().invCode(inv) + (draft ? " به‌صورت پیش‌نویس ثبت شد" : " صادر شد") + " · " + UI.money(amount));
     }
     store.save();
     UI.closePanel("invModal");
@@ -154,7 +154,7 @@
     const inv = store.state.invoices.find((i) => i.no === no);
     if (!inv) return;
     payingNo = no;
-    $("paySub").textContent = UI.padInvoiceNo(inv.no) + " · " + inv.custName + " · مانده: " + UI.money(store.invRemaining(inv));
+    $("paySub").textContent = S().invCode(inv) + " · " + inv.custName + " · مانده: " + UI.money(store.invRemaining(inv));
     $("payAmt").value = UI.groupFa(store.invRemaining(inv));
     UI.clearErrors($("payForm"));
     UI.openPanel("payModal");
@@ -175,7 +175,7 @@
     }
     inv.payments.push({ at: Date.now(), amount });
     const lead = store.leadById(inv.leadId);
-    if (lead) store.note(lead, "پرداخت " + UI.money(amount) + " برای " + UI.padInvoiceNo(inv.no));
+    if (lead) store.note(lead, "پرداخت " + UI.money(amount) + " برای " + S().invCode(inv));
     store.save();
     UI.closePanel("payModal");
     CRM.app.render();
@@ -189,7 +189,7 @@
     const copy = store.addInvoice({ business: src.business, leadId: src.leadId, custName: src.custName, amount: src.amount, issued: Date.now(), due: Date.now() + 14 * UI.DAY, draft: true, notes: src.notes });
     store.save();
     CRM.app.render();
-    UI.toast("کپی به‌صورت پیش‌نویس ساخته شد: " + UI.padInvoiceNo(copy.no));
+    UI.toast("کپی به‌صورت پیش‌نویس ساخته شد: " + S().invCode(copy));
   }
 
   function printInvoice(no) {
@@ -208,16 +208,16 @@
   function shareImage(no, button) {
     const inv = S().state.invoices.find((i) => i.no === no);
     if (!inv) return;
-    const name = "invoice-" + UI.toFa(inv.no) + ".png";
+    const name = "invoice-" + (inv.code || inv.no) + ".png";
     if (button) button.disabled = true;
     CRM.tools.invoiceImage(inv, bizTitle()).then((blob) => {
       if (button) button.disabled = false;
       const file = new File([blob], name, { type: "image/png" });
-      sharePending = { blob, name, file, title: UI.padInvoiceNo(inv.no) };
+      sharePending = { blob, name, file, title: S().invCode(inv) };
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       previewUrl = URL.createObjectURL(blob);
       $("shPreview").src = previewUrl;
-      $("shSub").textContent = UI.padInvoiceNo(inv.no) + " · " + inv.custName + " · عکس ساخته شد. یکی از گزینه‌ها را انتخاب کن.";
+      $("shSub").textContent = S().invCode(inv) + " · " + inv.custName + " · عکس ساخته شد. یکی از گزینه‌ها را انتخاب کن.";
       $("shSend").disabled = !canSendFile(file);
       $("shSendHint").textContent = canSendFile(file) ? "" : "این دستگاه ارسال مستقیم عکس را پشتیبانی نمی‌کند؛ عکس را دانلود کن و از همان‌جا بفرست.";
       UI.openPanel("shareModal");
@@ -247,14 +247,14 @@
     store.removeInvoice(no);
     store.save();
     CRM.app.render();
-    UI.toast((inv ? UI.padInvoiceNo(no) : "فاکتور") + " حذف شد.");
+    UI.toast((inv ? S().invCode(inv) : "فاکتور") + " حذف شد.");
   }
 
   function exportCsv() {
     const store = S();
     const rows = [["شماره", "مشتری", "تاریخ صدور", "سررسید", "مبلغ", "پرداخت‌شده", "مانده", "وضعیت"]];
     filtered().forEach((inv) => {
-      rows.push([inv.no, inv.custName, UI.jalali(inv.issued), UI.jalali(inv.due), inv.amount, store.invPaid(inv), store.invRemaining(inv), store.INV_LABEL[store.invStatus(inv)]]);
+      rows.push([inv.code || inv.no, inv.custName, UI.jalali(inv.issued), UI.jalali(inv.due), inv.amount, store.invPaid(inv), store.invRemaining(inv), store.INV_LABEL[store.invStatus(inv)]]);
     });
     UI.download("invoices-" + store.state.business + ".csv", CRM.tools.toCsv(rows), "text/csv;charset=utf-8");
     UI.toast("فایل CSV فاکتورها ساخته شد.");

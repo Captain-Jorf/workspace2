@@ -69,7 +69,7 @@
     const e = UI.esc;
     return '<div dir="rtl">' +
       '<h1 style="font-size:22px;margin-bottom:4px">' + e(bizTitle) + '</h1>' +
-      '<h2 style="font-size:18px;margin-bottom:18px">فاکتور ' + e(UI.padInvoiceNo(inv.no)) + '</h2>' +
+      '<h2 style="font-size:18px;margin-bottom:18px">فاکتور ' + e(CRM.store.invCode(inv)) + '</h2>' +
       '<table style="width:100%;border-collapse:collapse">' +
       row("مشتری", inv.custName) + row("تاریخ صدور", UI.jalali(inv.issued)) + row("سررسید", UI.jalali(inv.due)) +
       row("مبلغ کل", UI.money(inv.amount)) + row("پرداخت‌شده", UI.money(S.invPaid(inv))) +
@@ -111,7 +111,7 @@
       ctx.fillText(bizTitle, W - M, 110);
       ctx.font = "600 30px Shoor, sans-serif";
       ctx.fillStyle = "#4a93c9";
-      ctx.fillText("فاکتور " + UI.padInvoiceNo(inv.no), W - M, 170);
+      ctx.fillText("فاکتور " + CRM.store.invCode(inv), W - M, 170);
       const rows = [
         ["مشتری", inv.custName], ["تاریخ صدور", UI.jalali(inv.issued)], ["سررسید", UI.jalali(inv.due)],
         ["مبلغ کل", UI.money(inv.amount)], ["پرداخت‌شده", UI.money(S.invPaid(inv))], ["مانده", UI.money(S.invRemaining(inv))],

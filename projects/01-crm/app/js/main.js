@@ -11,7 +11,7 @@
   let filter = "all";
   let search = "";
 
-  const VIEW_TITLE = { today: "امروز", notices: "اطلاعیه‌ها", customers: "مشتری‌ها", invoices: "فاکتورها", archive: "بایگانی", reports: "گزارش‌ها" };
+  const VIEW_TITLE = { today: "امروز", notices: "اطلاعیه‌ها", customers: "مشتری‌ها", invoices: "فاکتورها", notes: "یادداشت‌ها", archive: "بایگانی", reports: "گزارش‌ها" };
 
   function matchesSearch(lead) {
     const q = UI.toEn(search).trim().toLowerCase();
@@ -37,6 +37,7 @@
     if (view === "notices") CRM.notices.render();
     if (view === "customers") CRM.customers.render();
     if (view === "invoices") CRM.invoices.render();
+    if (view === "notes") CRM.notes.render();
     if (view === "archive") CRM.notices.renderArchive();
     if (view === "reports") CRM.reports.render();
     $("pageSub").textContent = bizOf().title + " · " + UI.toFa(S().bizLeads().length) + " مشتری";

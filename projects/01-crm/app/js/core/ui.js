@@ -4,7 +4,7 @@
   const DIGITS_FA = "۰۱۲۳۴۵۶۷۸۹";
   const DIGITS_AR = "٠١٢٣٤٥٦٧٨٩";
   const DAY = CRM.config.DAY;
-  const PANELS = ["drawer", "callModal", "remindModal", "detailModal", "invModal", "payModal", "shareModal", "mergeModal", "colsModal", "importModal", "settingsModal"];
+  const PANELS = ["drawer", "callModal", "remindModal", "detailModal", "invModal", "payModal", "shareModal", "noteModal", "mergeModal", "colsModal", "importModal", "settingsModal"];
 
   const $ = (id) => document.getElementById(id);
 
@@ -69,10 +69,6 @@
     const d = new Date(ts);
     const parts = gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate());
     return parts[0] + "/" + String(parts[1]).padStart(2, "0") + "/" + String(parts[2]).padStart(2, "0");
-  }
-
-  function padInvoiceNo(no) {
-    return "ف-" + toFa(String(no).padStart(3, "0"));
   }
 
   let toastTimer = null;
@@ -163,7 +159,7 @@
 
   CRM.ui = {
     $, el, esc, toFa, toEn, groupFa, money, cleanPhone, validPhone, daysFromNow,
-    jalali, jalaliTime, jalaliNumeric, gregorianToJalali, padInvoiceNo, JALALI_MONTHS,
+    jalali, jalaliTime, jalaliNumeric, gregorianToJalali, JALALI_MONTHS,
     toast, hideToast, isOpen, openPanel, closePanel, closeAll, setErr, clearErrors,
     download, printHtml, DAY
   };

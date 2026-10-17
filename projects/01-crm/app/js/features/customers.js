@@ -226,12 +226,12 @@
       store.state.invoices.forEach((inv) => {
         if (inv.leadId === o.id) { inv.leadId = primary.id; inv.custName = primary.name; }
       });
+      store.state.notes.forEach((n) => { if (n.customerId === o.id) n.customerId = primary.id; });
       primary.log = primary.log.concat(o.log || []).sort((a, b) => b.t - a.t);
       primary.amount = Math.max(primary.amount || 0, o.amount || 0);
       primary.stage = Math.max(primary.stage, o.stage);
       primary.remindAt = Math.max(primary.remindAt || 0, o.remindAt || 0) || null;
       primary.notes = [primary.notes, o.notes].filter(Boolean).join("\n");
-      primary.managerNote = [primary.managerNote, o.managerNote].filter(Boolean).join("\n");
       primary.source = primary.source || o.source;
       Object.keys(o.extra || {}).forEach((k) => { if (!primary.extra[k]) primary.extra[k] = o.extra[k]; });
       store.state.leads = store.state.leads.filter((l) => l.id !== o.id);

@@ -21,6 +21,7 @@
     <button class="nav" type="button" data-view="notices"><span class="ic">✉</span><span class="label">اطلاعیه‌ها</span></button>
     <button class="nav" type="button" data-view="customers"><span class="ic">☷</span><span class="label">مشتری‌ها</span></button>
     <button class="nav" type="button" data-view="invoices"><span class="ic">▤</span><span class="label">فاکتورها</span></button>
+    <button class="nav" type="button" data-view="notes"><span class="ic">✎</span><span class="label">یادداشت‌ها</span></button>
     <button class="nav" type="button" data-view="archive"><span class="ic">▣</span><span class="label">بایگانی</span></button>
     <button class="nav" type="button" data-view="reports"><span class="ic">▥</span><span class="label">گزارش‌ها</span></button>
     <div class="sep"></div>
@@ -121,6 +122,16 @@
       </div>
     </section>
 
+    <section class="view" id="v-notes" aria-label="یادداشت‌ها">
+      <div class="row-head">
+        <div class="tools">
+          <button class="btn primary" id="newNote" type="button">یادداشت جدید</button>
+        </div>
+        <input id="noteQ" class="input search" type="search" placeholder="جستجوی یادداشت" aria-label="جستجوی یادداشت">
+      </div>
+      <div class="list" id="noteList"></div>
+    </section>
+
     <section class="view" id="v-archive" aria-label="بایگانی">
       <div class="section-title">اطلاعیه‌های بایگانی‌شده</div>
       <div class="list" id="archList"></div>
@@ -161,7 +172,6 @@
     <div class="field" id="f-amount"><label for="amount">مبلغ (تومان)</label><input id="amount" class="input" type="text" inputmode="numeric"><div class="hint">برای مراحل پیشرفته‌تر الزامی است.</div><div class="err" role="alert"></div></div>
     <div id="extraFields"></div>
     <div class="field"><label for="notes">توضیحات</label><textarea id="notes" class="input area" placeholder="هر نکته‌ای که برای این مشتری لازم است"></textarea></div>
-    <div class="field"><label for="managerNote">یادداشت مدیر (فقط برای خودم)</label><textarea id="managerNote" class="input area" placeholder="این یادداشت در خروجی‌ها دیده نمی‌شود"></textarea></div>
     <div class="field"><label for="next">پیگیری بعدی</label>
       <select id="next" class="input"><option value="1">فردا</option><option value="2" selected>۲ روز دیگر (پیشنهادی)</option><option value="7">یک هفته دیگر</option><option value="14">دو هفته دیگر</option></select></div>
   </form>
@@ -225,8 +235,6 @@
   <div class="kv" id="dKv"></div>
   <h3>توضیحات</h3>
   <div class="notes-box" id="dNotes"></div>
-  <h3>یادداشت مدیر (فقط برای خودم)</h3>
-  <div class="notes-box" id="dManager"></div>
   <h3>فاکتورهای این مشتری</h3>
   <div class="timeline" id="dInv"></div>
   <h3>تاریخچه‌ی فعالیت</h3>
@@ -256,6 +264,21 @@
     <button id="paySave" class="btn primary lg" type="button">ثبت پرداخت</button>
     <button id="payFull" class="btn" type="button">پرداخت کامل</button>
     <button id="payCancel" class="btn ghost" type="button">انصراف</button>
+  </footer>
+</div>
+
+<div id="noteModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="nTitle" aria-hidden="true">
+  <header><h2 id="nTitle">یادداشت جدید</h2><button id="nClose" class="icon" type="button" aria-label="بستن">✕</button></header>
+  <div class="sub">فقط برای خودت است و در خروجی‌ها دیده نمی‌شود.</div>
+  <form id="noteForm" class="stack" novalidate>
+    <div class="field" id="f-n-title"><label for="nTitleInput">عنوان</label><input id="nTitleInput" class="input" type="text"><div class="err" role="alert"></div></div>
+    <div class="field"><label for="nCust">مربوط به مشتری (اختیاری)</label><select id="nCust" class="input"></select></div>
+    <div class="field"><label for="nBody">متن یادداشت</label><textarea id="nBody" class="input area" style="min-height:160px"></textarea></div>
+  </form>
+  <footer>
+    <button id="nSave" class="btn primary lg" type="button">ذخیره</button>
+    <button id="nDelete" class="btn danger" type="button" hidden>حذف</button>
+    <button id="nCancel" class="btn ghost" type="button">انصراف</button>
   </footer>
 </div>
 
@@ -387,6 +410,7 @@
 <script src="js/features/today.js"></script>
 <script src="js/features/notices.js"></script>
 <script src="js/features/customers.js"></script>
+<script src="js/features/notes.js"></script>
 <script src="js/features/invoices.js"></script>
 <script src="js/features/reports.js"></script>
 <script src="js/features/settings.js"></script>

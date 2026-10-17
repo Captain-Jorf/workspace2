@@ -47,7 +47,6 @@
     $("amount").value = lead && lead.amount ? UI.groupFa(lead.amount) : "";
     $("next").value = "2";
     $("notes").value = lead ? lead.notes : "";
-    $("managerNote").value = lead ? lead.managerNote : "";
     renderExtra(lead ? lead.extra : null);
     UI.clearErrors($("form"));
     UI.openPanel("drawer");
@@ -92,7 +91,6 @@
       name, phone, stage, amount, extra,
       source: $("source").value,
       notes: $("notes").value.trim(),
-      managerNote: $("managerNote").value.trim(),
       days: Number($("next").value)
     };
   }
@@ -105,10 +103,10 @@
     const store = S();
     if (editingId) {
       const lead = store.leadById(editingId);
-      Object.assign(lead, { name: v.name, phone: v.phone, stage: v.stage, amount: v.amount, source: v.source, next, extra: v.extra, notes: v.notes, managerNote: v.managerNote });
+      Object.assign(lead, { name: v.name, phone: v.phone, stage: v.stage, amount: v.amount, source: v.source, next, extra: v.extra, notes: v.notes });
       store.note(lead, "اطلاعات ویرایش شد");
     } else {
-      const lead = store.addLead({ name: v.name, phone: v.phone, stage: v.stage, stageSince: Date.now(), amount: v.amount, source: v.source, next, extra: v.extra, notes: v.notes, managerNote: v.managerNote });
+      const lead = store.addLead({ name: v.name, phone: v.phone, stage: v.stage, stageSince: Date.now(), amount: v.amount, source: v.source, next, extra: v.extra, notes: v.notes });
       store.note(lead, "اطلاعیه ثبت شد");
     }
     store.save();
