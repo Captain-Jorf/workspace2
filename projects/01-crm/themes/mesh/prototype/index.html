@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نمونه‌ی آزمایشی CRM · یخ قطبی</title>
+<style>
+@font-face { font-family: "Vazir"; src: url("../fonts/Vazirmatn-Regular.ttf"); font-weight: 400; }
+@font-face { font-family: "Vazir"; src: url("../fonts/Vazirmatn-Medium.ttf"); font-weight: 500; }
+@font-face { font-family: "Vazir"; src: url("../fonts/Vazirmatn-SemiBold.ttf"); font-weight: 600; }
+@font-face { font-family: "Vazir"; src: url("../fonts/Vazirmatn-Bold.ttf"); font-weight: 700; }
+:root {
+  --ink: #17303f; --muted: #637f8f; --accent: #4a93c9; --accent-d: #357bb0;
+  --danger: #b42318; --ok: #15803d; --warn: #b45309;
+  --line: rgba(255,255,255,.95); --glass: rgba(255,255,255,.45);
+  --shadow: 0 10px 30px rgba(20,60,100,.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Vazir", system-ui, sans-serif; color: var(--ink); min-height: 100vh;
+  background-color: #fbfdfe;
+  background-image:
+    radial-gradient(at 10% 10%, #e8f4fb 0px, transparent 55%),
+    radial-gradient(at 90% 14%, #f4fafd 0px, transparent 55%),
+    radial-gradient(at 78% 90%, #e2eef9 0px, transparent 55%),
+    radial-gradient(at 16% 88%, #e6f6f9 0px, transparent 55%);
+  background-attachment: fixed;
+}
+button, input, select { font: inherit; color: inherit; }
+.glass {
+  background: var(--glass); border: 1px solid var(--line); border-radius: 22px;
+  backdrop-filter: blur(26px) saturate(140%); -webkit-backdrop-filter: blur(26px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8), var(--shadow);
+}
+.app { display: grid; grid-template-columns: 220px 1fr; gap: 20px; padding: 20px; min-height: 100vh; }
+/* sidebar */
+.side { padding: 20px 14px; display: flex; flex-direction: column; gap: 6px; align-self: start; position: sticky; top: 20px; }
+.logo { font-weight: 700; font-size: 20px; padding: 6px 12px 16px; }
+.logo span { color: var(--accent); }
+.nav { text-align: start; background: none; border: 0; padding: 11px 14px; border-radius: 14px; color: var(--muted); cursor: pointer; font-weight: 500; }
+.nav[aria-current="page"], .nav:hover { background: rgba(255,255,255,.7); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.nav[aria-current="page"] { color: var(--accent-d); }
+/* top */
+main { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.top { padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.top h1 { font-size: 26px; font-weight: 700; }
+.top p { color: var(--muted); margin-top: 4px; font-size: 14px; }
+.actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.input { height: 44px; padding: 0 16px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.7); min-width: 220px; outline: none; }
+.input:focus-visible, .btn:focus-visible, .icon:focus-visible, select:focus-visible, .card-lead:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pill { font-size: 13px; color: var(--ok); background: rgba(255,255,255,.7); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; white-space: nowrap; }
+kbd { font-family: inherit; font-size: 12px; background: rgba(255,255,255,.35); border-radius: 6px; padding: 1px 6px; margin-inline-start: 6px; }
+/* buttons */
+.btn { height: 44px; padding: 0 18px; border-radius: 14px; border: 1px solid var(--line); cursor: pointer; font-weight: 600; transition: transform .08s, background .15s; background: rgba(255,255,255,.6); }
+.btn:hover { background: rgba(255,255,255,.9); }
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 6px 16px rgba(74,147,201,.3); }
+.btn.primary:hover { background: var(--accent-d); }
+.btn.secondary { background: rgba(255,255,255,.55); }
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.danger { background: transparent; border-color: transparent; color: var(--danger); }
+.btn.danger.confirm { background: var(--danger); color: #fff; border-color: var(--danger); }
+.btn.sm { height: 34px; padding: 0 12px; border-radius: 12px; font-size: 14px; }
+.icon { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: rgba(255,255,255,.6); cursor: pointer; font-size: 16px; }
+/* board */
+.board { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 14px; align-items: start; }
+.col { padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 240px; transition: background .15s; }
+.col.over { background: rgba(255,255,255,.7); }
+.col header { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; font-weight: 600; }
+.col header em { font-style: normal; font-size: 13px; color: var(--muted); background: rgba(255,255,255,.7); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+.card-lead { padding: 14px; display: flex; flex-direction: column; gap: 6px; cursor: grab; border-radius: 18px; }
+.card-lead:active { cursor: grabbing; }
+.card-lead .nm { font-weight: 600; }
+.card-lead .meta { color: var(--muted); font-size: 13px; }
+.card-lead .amt { font-weight: 600; font-size: 14px; }
+.card-lead .fu { font-size: 13px; color: var(--muted); }
+.card-lead .fu.over { color: var(--danger); font-weight: 600; }
+.card-lead .fu.today { color: var(--warn); font-weight: 600; }
+.card-lead .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; margin-top: 6px; }
+.card-lead select { height: 34px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.7); padding: 0 8px; font-size: 13px; }
+.flash { animation: flash 1.2s ease; }
+@keyframes flash { 0% { box-shadow: 0 0 0 4px rgba(74,147,201,.5); } 100% { box-shadow: none; } }
+.empty { color: var(--muted); font-size: 14px; text-align: center; padding: 18px 8px; }
+.foot { color: var(--muted); font-size: 13px; text-align: center; }
+/* drawer */
+.scrim { position: fixed; inset: 0; background: rgba(23,48,63,.15); opacity: 0; pointer-events: none; transition: opacity .2s; }
+.scrim.on { opacity: 1; pointer-events: auto; }
+.drawer { position: fixed; top: 16px; bottom: 16px; left: 16px; width: min(420px, calc(100% - 32px)); padding: 22px; transform: translateX(-120%); transition: transform .25s ease; display: flex; flex-direction: column; z-index: 10; }
+.drawer.on { transform: translateX(0); }
+.drawer header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.drawer h2 { font-size: 20px; }
+.drawer form { display: flex; flex-direction: column; gap: 14px; overflow: auto; flex: 1; padding: 2px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 14px; font-weight: 500; }
+.field .input { min-width: 0; width: 100%; }
+.field .hint { font-size: 12px; color: var(--muted); }
+.field .err { font-size: 13px; color: var(--danger); min-height: 0; }
+.field.bad .input { border-color: var(--danger); }
+.drawer footer { display: flex; gap: 10px; justify-content: flex-start; padding-top: 14px; border-top: 1px solid rgba(23,48,63,.08); margin-top: 6px; }
+/* toast */
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 12px 16px; display: flex; gap: 14px; align-items: center; z-index: 20; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.on { opacity: 1; pointer-events: auto; }
+/* responsive */
+@media (max-width: 1100px) {
+  .board { grid-template-columns: repeat(4, minmax(240px, 1fr)); overflow-x: auto; scroll-snap-type: x mandatory; }
+  .col { scroll-snap-align: start; }
+}
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; padding: 12px; }
+  .side { flex-direction: row; flex-wrap: wrap; position: static; padding: 10px; }
+  .logo { padding: 6px 8px; }
+  .input { min-width: 0; width: 100%; }
+  .top { padding: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="glass side" aria-label="ناوبری اصلی">
+    <div class="logo">CRM <span>ساده</span></div>
+    <button class="nav" type="button">داشبورد</button>
+    <button class="nav" type="button" aria-current="page">سرنخ‌ها</button>
+    <button class="nav" type="button">مشتری‌ها</button>
+    <button class="nav" type="button">گزارش‌ها</button>
+    <button class="nav" type="button">تنظیمات</button>
+  </aside>
+
+  <main>
+    <header class="glass top">
+      <div>
+        <h1>سرنخ‌ها</h1>
+        <p id="summary"></p>
+      </div>
+      <div class="actions">
+        <input id="q" class="input" type="search" placeholder="جستجوی نام یا موبایل (کلید /)" aria-label="جستجو">
+        <span id="sync" class="pill" title="وضعیت ذخیره‌سازی">ذخیره روی دستگاه</span>
+        <button id="newBtn" class="btn primary" type="button">سرنخ جدید <kbd>N</kbd></button>
+      </div>
+    </header>
+
+    <section id="board" class="board" aria-label="پایپ‌لاین فروش"></section>
+    <div class="foot">نمونه‌ی آزمایشی · داده‌ی ساختگی · ذخیره‌ی محلی در مرورگر</div>
+  </main>
+</div>
+
+<div id="scrim" class="scrim"></div>
+
+<aside id="drawer" class="glass drawer" aria-hidden="true" aria-labelledby="dtitle">
+  <header>
+    <h2 id="dtitle">سرنخ جدید</h2>
+    <button id="closeBtn" class="icon" type="button" aria-label="بستن">✕</button>
+  </header>
+  <form id="form" novalidate>
+    <div class="field" id="f-name">
+      <label for="name">نام شرکت یا مشتری</label>
+      <input id="name" class="input" type="text" autocomplete="off" placeholder="مثلاً فروشگاه آریا">
+      <div class="err" role="alert"></div>
+    </div>
+    <div class="field" id="f-phone">
+      <label for="phone">شماره موبایل</label>
+      <input id="phone" class="input" type="tel" inputmode="numeric" placeholder="۰۹۱۲۱۲۳۴۵۶۷">
+      <div class="err" role="alert"></div>
+    </div>
+    <div class="field" id="f-source">
+      <label for="source">منبع آشنایی</label>
+      <select id="source" class="input">
+        <option value="">انتخاب کنید</option>
+        <option>اینستاگرام</option>
+        <option>معرفی دوستان</option>
+        <option>وب‌سایت</option>
+        <option>تماس ورودی</option>
+        <option>نمایشگاه</option>
+      </select>
+      <div class="err" role="alert"></div>
+    </div>
+    <div class="field">
+      <label for="stage">مرحله</label>
+      <select id="stage" class="input">
+        <option value="0">جدید</option>
+        <option value="1">در تماس</option>
+        <option value="2">پیشنهاد</option>
+        <option value="3">برنده</option>
+      </select>
+    </div>
+    <div class="field" id="f-amount">
+      <label for="amount">مبلغ پیشنهادی (تومان)</label>
+      <input id="amount" class="input" type="text" inputmode="numeric" placeholder="مثلاً ۲۵۰۰۰۰۰۰">
+      <div class="hint" id="amountHint">برای مراحل «پیشنهاد» و «برنده» الزامی است.</div>
+      <div class="err" role="alert"></div>
+    </div>
+    <div class="field">
+      <label for="next">پیگیری بعدی</label>
+      <select id="next" class="input">
+        <option value="1">فردا</option>
+        <option value="2" selected>۲ روز دیگر (پیشنهادی)</option>
+        <option value="7">یک هفته دیگر</option>
+        <option value="14">دو هفته دیگر</option>
+      </select>
+    </div>
+  </form>
+  <footer>
+    <button id="saveBtn" class="btn primary" type="submit" form="form">ذخیره <kbd>Ctrl+Enter</kbd></button>
+    <button id="cancelBtn" class="btn secondary" type="button">انصراف</button>
+  </footer>
+</aside>
+
+<div id="toast" class="glass toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastAct" class="btn sm secondary" type="button" hidden></button></div>
+
+<script>
+(function () {
+  "use strict";
+  const DAY = 86400000;
+  const STAGES = ["جدید", "در تماس", "پیشنهاد", "برنده"];
+  const KEY = "crm-proto-v1";
+  const $ = (id) => document.getElementById(id);
+
+  // ---------- helpers ----------
+  const toEn = (s) => String(s || "").replace(/[۰-۹]/g, (d) => "۰۱۲۳۴۵۶۷۸۹".indexOf(d))
+                                      .replace(/[٠-٩]/g, (d) => "٠١٢٣٤٥٦٧٨٩".indexOf(d));
+  const fa = (n) => Number(n).toLocaleString("fa-IR");
+  const money = (n) => n ? fa(n) + " تومان" : "بدون مبلغ";
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+  // ---------- state ----------
+  function seed() {
+    const now = Date.now();
+    return { nextId: 8, lastDeleted: null, leads: [
+      { id: 1, name: "فروشگاه ماه", phone: "09121110001", source: "اینستاگرام", stage: 0, amount: 0, next: now + DAY * 1 },
+      { id: 2, name: "گالری شیراز", phone: "09121110002", source: "وب‌سایت", stage: 0, amount: 0, next: now + DAY * 3 },
+      { id: 3, name: "کافه بهار", phone: "09121110003", source: "معرفی دوستان", stage: 1, amount: 40000000, next: now - DAY * 2 },
+      { id: 4, name: "دفتر حقوقی سپهر", phone: "09121110004", source: "تماس ورودی", stage: 1, amount: 65000000, next: now },
+      { id: 5, name: "فروشگاه نور", phone: "09121110005", source: "نمایشگاه", stage: 2, amount: 90000000, next: now + DAY * 2 },
+      { id: 6, name: "شرکت آریا", phone: "09121110006", source: "معرفی دوستان", stage: 3, amount: 120000000, next: now + DAY * 7 },
+      { id: 7, name: "پروژه شمال", phone: "09121110007", source: "وب‌سایت", stage: 3, amount: 55000000, next: now + DAY * 14 }
+    ]};
+  }
+  function load() { try { return JSON.parse(localStorage.getItem(KEY)) || seed(); } catch (e) { return seed(); } }
+  let state = load();
+  let search = "";
+  let pendingDelete = null;
+  let undoTimer = null;
+  let editingId = null;
+
+  function save() {
+    localStorage.setItem(KEY, JSON.stringify(state));
+    $("sync").textContent = "ذخیره شد · روی دستگاه";
+  }
+
+  // ---------- render ----------
+  function dueInfo(l) {
+    const days = Math.ceil((l.next - Date.now()) / DAY);
+    if (days < 0) return { text: "عقب‌افتاده " + fa(-days) + " روز", cls: "over" };
+    if (days === 0) return { text: "پیگیری امروز", cls: "today" };
+    return { text: "پیگیری " + fa(days) + " روز دیگر", cls: "" };
+  }
+
+  function card(l) {
+    const c = el("article", "glass card-lead");
+    c.tabIndex = 0; c.draggable = true; c.dataset.id = l.id;
+    c.appendChild(el("div", "nm", l.name));
+    c.appendChild(el("div", "meta", l.source + " · " + fa(l.phone)));
+    c.appendChild(el("div", "amt", money(l.amount)));
+    const d = dueInfo(l);
+    c.appendChild(el("div", "fu " + d.cls, d.text));
+
+    const row = el("div", "row");
+    const sel = el("select"); sel.setAttribute("aria-label", "تغییر مرحله " + l.name);
+    STAGES.forEach((s, i) => { const o = el("option", "", s); o.value = i; if (i === l.stage) o.selected = true; sel.appendChild(o); });
+    sel.addEventListener("change", () => moveLead(l.id, Number(sel.value)));
+    const del = el("button", "btn sm danger", "حذف");
+    del.type = "button"; del.setAttribute("aria-label", "حذف " + l.name);
+    del.addEventListener("click", () => askDelete(l.id, del));
+    row.append(sel, del);
+    c.appendChild(row);
+
+    c.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/plain", String(l.id)); c.style.opacity = ".5"; });
+    c.addEventListener("dragend", () => { c.style.opacity = ""; });
+    c.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" && l.stage < 3) { e.preventDefault(); moveLead(l.id, l.stage + 1, true); }
+      if (e.key === "ArrowLeft" && l.stage > 0) { e.preventDefault(); moveLead(l.id, l.stage - 1, true); }
+      if (e.key === "Enter" && !e.target.closest("button,select")) { e.preventDefault(); openDrawer(l.id); }
+    });
+    c.addEventListener("dblclick", () => openDrawer(l.id));
+    return c;
+  }
+
+  function render() {
+    const board = $("board");
+    board.textContent = "";
+    const q = toEn(search).trim().toLowerCase();
+    const matches = (l) => !q || l.name.toLowerCase().includes(q) || l.phone.includes(q);
+    const all = state.leads;
+    const today = all.filter((l) => l.stage < 3 && Math.ceil((l.next - Date.now()) / DAY) <= 0).length;
+    $("summary").textContent = fa(all.length) + " سرنخ · " + fa(today) + " پیگیری امروز یا عقب‌افتاده";
+
+    STAGES.forEach((name, s) => {
+      const items = all.filter((l) => l.stage === s && matches(l));
+      const col = el("section", "glass col");
+      col.dataset.stage = s;
+      const head = el("header"); head.append(el("span", "", name), el("em", "", fa(items.length)));
+      col.appendChild(head);
+      col.addEventListener("dragover", (e) => { e.preventDefault(); col.classList.add("over"); });
+      col.addEventListener("dragleave", () => col.classList.remove("over"));
+      col.addEventListener("drop", (e) => {
+        e.preventDefault(); col.classList.remove("over");
+        const id = Number(e.dataTransfer.getData("text/plain"));
+        if (id) moveLead(id, s);
+      });
+      if (!items.length) col.appendChild(el("div", "empty", "هنوز سرنخی در این مرحله نیست."));
+      items.forEach((l) => col.appendChild(card(l)));
+      board.appendChild(col);
+    });
+  }
+
+  // ---------- actions ----------
+  function moveLead(id, stage, keepFocus) {
+    const l = state.leads.find((x) => x.id === id);
+    if (!l || l.stage === stage) return;
+    if (stage >= 2 && !l.amount) {
+      toast("برای مرحله‌ی «" + STAGES[stage] + "» ابتدا مبلغ را وارد کن.", "ویرایش", () => openDrawer(id));
+      openDrawer(id, true);
+      return;
+    }
+    l.stage = stage;
+    save(); render();
+    if (keepFocus) { const c = document.querySelector('[data-id="' + id + '"]'); if (c) c.focus(); }
+    const c = document.querySelector('[data-id="' + id + '"]'); if (c) c.classList.add("flash");
+    toast(l.name + " به مرحله‌ی «" + STAGES[stage] + "» رفت.");
+  }
+
+  function askDelete(id, btn) {
+    if (pendingDelete !== id) {
+      pendingDelete = id;
+      btn.textContent = "تأیید حذف"; btn.classList.add("confirm");
+      setTimeout(() => { if (pendingDelete === id) { pendingDelete = null; render(); } }, 3000);
+      return;
+    }
+    const idx = state.leads.findIndex((x) => x.id === id);
+    const [removed] = state.leads.splice(idx, 1);
+    state.lastDeleted = { lead: removed, index: idx };
+    pendingDelete = null;
+    save(); render();
+    toast(removed.name + " حذف شد.", "بازگردانی", undoDelete, 5000);
+  }
+  function undoDelete() {
+    const d = state.lastDeleted; if (!d) return;
+    state.leads.splice(Math.min(d.index, state.leads.length), 0, d.lead);
+    state.lastDeleted = null; save(); render(); hideToast();
+    toast("بازگردانی شد.");
+  }
+
+  // ---------- drawer ----------
+  function openDrawer(id, requireAmount) {
+    const l = id ? state.leads.find((x) => x.id === id) : null;
+    editingId = l ? l.id : null;
+    $("dtitle").textContent = l ? "ویرایش سرنخ" : "سرنخ جدید";
+    $("name").value = l ? l.name : "";
+    $("phone").value = l ? l.phone : "";
+    $("source").value = l ? l.source : "";
+    $("stage").value = l ? l.stage : "0";
+    $("amount").value = l && l.amount ? fa(l.amount) : "";
+    $("next").value = "2";
+    document.querySelectorAll(".field").forEach((f) => { f.classList.remove("bad"); f.querySelector(".err").textContent = ""; });
+    $("drawer").classList.add("on"); $("drawer").setAttribute("aria-hidden", "false");
+    $("scrim").classList.add("on");
+    setTimeout(() => $("name").focus(), 50);
+    if (requireAmount) { $("stage").value = "2"; $("amount").focus(); }
+  }
+  function closeDrawer() {
+    $("drawer").classList.remove("on"); $("drawer").setAttribute("aria-hidden", "true");
+    $("scrim").classList.remove("on");
+  }
+  function setErr(field, msg) {
+    const f = $(field); f.classList.toggle("bad", !!msg); f.querySelector(".err").textContent = msg || "";
+  }
+  function validate() {
+    let ok = true;
+    const name = $("name").value.trim();
+    const phone = toEn($("phone").value).replace(/\s|-/g, "");
+    const stage = Number($("stage").value);
+    const amountRaw = toEn($("amount").value).replace(/[,٬\s]/g, "");
+    const amount = amountRaw ? Number(amountRaw) : 0;
+
+    if (name.length < 2) { setErr("f-name", "نام را حداقل ۲ حرف وارد کن."); ok = false; } else setErr("f-name", "");
+    if (!/^09\d{9}$/.test(phone)) { setErr("f-phone", "شماره موبایل باید ۱۱ رقم و با ۰۹ شروع شود."); ok = false; } else setErr("f-phone", "");
+    if (!$("source").value) { setErr("f-source", "منبع آشنایی را انتخاب کن."); ok = false; } else setErr("f-source", "");
+    if (stage >= 2 && !amount) { setErr("f-amount", "برای این مرحله مبلغ لازم است."); ok = false; }
+    else if (amountRaw && (!/^\d+$/.test(amountRaw) || amount <= 0)) { setErr("f-amount", "مبلغ فقط عدد مثبت باشد."); ok = false; }
+    else setErr("f-amount", "");
+    return ok ? { name, phone, stage, amount, source: $("source").value, days: Number($("next").value) } : null;
+  }
+
+  $("form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const v = validate(); if (!v) return;
+    const next = Date.now() + v.days * DAY;
+    let target;
+    if (editingId) {
+      target = state.leads.find((x) => x.id === editingId);
+      Object.assign(target, { name: v.name, phone: v.phone, stage: v.stage, amount: v.amount, source: v.source, next });
+    } else {
+      target = { id: state.nextId++, name: v.name, phone: v.phone, stage: v.stage, amount: v.amount, source: v.source, next };
+      state.leads.push(target);
+    }
+    save(); closeDrawer(); render();
+    const c = document.querySelector('[data-id="' + target.id + '"]'); if (c) c.classList.add("flash");
+    toast(editingId ? "تغییرات ذخیره شد." : "سرنخ ثبت شد.");
+  });
+  $("form").addEventListener("keydown", (e) => { if (e.ctrlKey && e.key === "Enter") { e.preventDefault(); $("form").requestSubmit(); } });
+  $("newBtn").addEventListener("click", () => openDrawer(null));
+  $("closeBtn").addEventListener("click", closeDrawer);
+  $("cancelBtn").addEventListener("click", closeDrawer);
+  $("scrim").addEventListener("click", closeDrawer);
+
+  // ---------- toast ----------
+  let toastTimer = null;
+  function toast(msg, actLabel, actFn, ms) {
+    $("toastMsg").textContent = msg;
+    const b = $("toastAct");
+    if (actLabel) { b.hidden = false; b.textContent = actLabel; b.onclick = () => { actFn(); }; }
+    else { b.hidden = true; b.onclick = null; }
+    $("toast").classList.add("on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, ms || 3200);
+  }
+  function hideToast() { $("toast").classList.remove("on"); }
+
+  // ---------- search & shortcuts ----------
+  $("q").addEventListener("input", (e) => { search = e.target.value; render(); });
+  document.addEventListener("keydown", (e) => {
+    const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+    if (e.key === "Escape") closeDrawer();
+    if (typing) return;
+    if (e.key === "/") { e.preventDefault(); $("q").focus(); }
+    if (e.key === "n" || e.key === "N") { e.preventDefault(); openDrawer(null); }
+  });
+
+  render();
+  $("sync").textContent = "ذخیره روی دستگاه";
+})();
+</script>
+</body>
+</html>
