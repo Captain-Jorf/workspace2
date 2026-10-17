@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#eef6fb">
+<meta name="description" content="CRM ساده؛ آفلاین‌اول، داده روی دستگاه، برای پنج کسب‌وکار نمونه.">
+<title>CRM ساده</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/print.css" media="print">
+</head>
+<body>
+<a class="skip" href="#view">رفتن به محتوا</a>
+
+<section id="start" class="start" aria-labelledby="startTitle" hidden></section>
+
+<div id="shell" class="shell" hidden>
+  <aside id="side" class="side glass" aria-label="منوی اصلی">
+    <div class="brand">CRM <span id="brandBiz">ساده</span></div>
+    <nav id="navList" class="nav-list" aria-label="صفحات"></nav>
+    <div class="side-foot">
+      <div class="user-chip" title="کاربر فعال"><span id="userName"></span><small id="userRole"></small></div>
+      <button id="switchBiz" class="btn ghost sm" type="button">تغییر کسب‌وکار</button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar glass">
+      <div class="title-row">
+        <button id="toggleSide" class="icon-btn menu-btn" type="button" aria-expanded="false" aria-controls="side" aria-label="باز و بسته کردن منو">☰</button>
+        <div class="title-box">
+          <h1 id="pageTitle"></h1>
+          <p id="pageSub"></p>
+        </div>
+      </div>
+      <div class="top-tools">
+        <input id="q" class="input search" type="search" placeholder="جستجو (کلید /)" aria-label="جستجو" autocomplete="off">
+        <div id="filters" class="chips" role="group" aria-label="فیلتر فهرست"></div>
+        <div class="header-actions">
+          <button id="paletteBtn" class="btn" type="button" aria-keyshortcuts="Control+K">دستورها</button>
+          <span id="headerActions" class="action-group"></span>
+        </div>
+      </div>
+    </header>
+
+    <div class="status-line" aria-live="polite">
+      <span id="netState" class="pill"></span>
+      <span id="saveState" class="pill"></span>
+    </div>
+
+    <main id="view" class="content" tabindex="-1"></main>
+    <footer id="footnote" class="footnote"></footer>
+  </div>
+</div>
+
+<div id="layer"></div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<div id="printArea" class="print-area" aria-hidden="true"></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

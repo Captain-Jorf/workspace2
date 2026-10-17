@@ -1,0 +1,10 @@
+@media print {
+  @page { size: A5; margin: 12mm; }
+  body > *:not(#printArea) { display: none !important; }
+  #printArea { display: block !important; position: static; }
+  .print-sheet { color: #000; background: #fff; font-family: 'Shoor', sans-serif; }
+  .print-sheet table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+  .print-sheet th, .print-sheet td { border-bottom: 1px solid #999; padding: 6px; text-align: right; }
+  .print-total { font-weight: 700; font-size: 1.1em; }
+}
+.print-area { display: none; }
