@@ -65,6 +65,24 @@
     const maxNote = s.notes.reduce((m, n) => Math.max(m, n.id || 0), 0);
     s.nextNote = Math.max(s.nextNote || 1, maxNote + 1);
     s.notes.forEach((n) => { if (!n.id) n.id = s.nextNote++; });
+    if ((s.codeVersion || 0) < 2) {
+      // نسخه‌ی قبلی فاکتورهای نمونه را با ساعت یکسان ساخته بود؛ ساعت‌های تکراری را جدا می‌کنیم
+      const groups = {};
+      s.invoices.forEach((i) => {
+        const d = new Date(i.issued || Date.now());
+        const key = [d.getHours(), d.getMinutes(), d.getSeconds()].join("-");
+        (groups[key] = groups[key] || []).push(i);
+      });
+      Object.keys(groups).forEach((key) => {
+        groups[key].slice(1).forEach((i, k) => {
+          const d = new Date(i.issued || Date.now());
+          d.setMinutes(d.getMinutes() + 7 * (k + 1));
+          i.issued = d.getTime();
+        });
+      });
+      s.invoices.forEach((i) => { i.code = null; });
+      s.codeVersion = 2;
+    }
     const taken = new Set();
     s.invoices.forEach((i) => {
       if (!i.code || taken.has(i.code)) i.code = makeInvCode(i.issued || Date.now(), taken);

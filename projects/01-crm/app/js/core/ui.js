@@ -102,6 +102,12 @@
   }
 
   function openPanel(id) {
+    PANELS.forEach((other) => {
+      if (other === id) return;
+      const n = $(other);
+      n.classList.remove("on");
+      n.setAttribute("aria-hidden", "true");
+    });
     const node = $(id);
     node.classList.add("on");
     node.setAttribute("aria-hidden", "false");

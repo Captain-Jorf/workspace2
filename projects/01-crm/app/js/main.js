@@ -47,6 +47,7 @@
   }
 
   function setView(v) {
+    UI.closeAll();
     view = v;
     document.querySelectorAll(".nav[data-view]").forEach((b) => b.setAttribute("aria-current", b.dataset.view === v ? "page" : "false"));
     document.querySelectorAll(".view").forEach((s) => s.classList.toggle("on", s.id === "v-" + v));
