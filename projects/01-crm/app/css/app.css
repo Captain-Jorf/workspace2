@@ -24,7 +24,7 @@
   --glass-strong: rgba(255, 255, 255, 0.85);
   --radius: 14px;
   --shadow: 0 6px 20px rgba(18, 41, 58, 0.06);
-  font-family: 'Shoor', system-ui, sans-serif;
+  font-family: 'Shoor', 'Vazirmatn', 'Tahoma', 'Segoe UI', 'Noto Sans Devanagari', 'Nirmala UI', 'Mangal', 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', system-ui, sans-serif;
   color-scheme: light;
 }
 html[data-theme='dark'] {

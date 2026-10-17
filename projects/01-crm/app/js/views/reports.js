@@ -13,7 +13,7 @@ export const meta = {
   title: 'گزارش‌ها',
   sub: () => `${BUSINESSES[store.get().activeBiz].title} · خلاصه‌ی فروش و پیگیری`,
   chips: false,
-  actions: ['csv']
+  actions: ['csv', 'print']
 };
 
 export function render(root) {

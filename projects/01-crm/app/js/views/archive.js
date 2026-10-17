@@ -7,7 +7,7 @@ import * as store from '../core/store.js';
 import * as cust from '../domain/customers.js';
 import { toast } from '../ui/toast.js';
 import { confirmDialog } from '../ui/dialog.js';
-import { emptyState, stageChip } from './parts.js';
+import { emptyState, stageChip, openOnBodyClick } from './parts.js';
 import { ctx } from '../ui/context.js';
 
 export const meta = {
@@ -30,7 +30,7 @@ export function render(root, { refresh }) {
   }
   const table = h('table', { class: 'tbl' },
     h('thead', {}, h('tr', {}, h('th', { text: 'نام' }), h('th', { text: 'موبایل' }), h('th', { text: 'مرحله' }), h('th', { text: 'عملیات' }))),
-    h('tbody', {}, ...rows.map((c) => h('tr', {},
+    h('tbody', {}, ...rows.map((c) => h('tr', { class: 'clickable', tabindex: '0' },
       h('td', { text: c.name }),
       h('td', { class: 'ltr', text: c.phone }),
       h('td', {}, stageChip(c, key)),
@@ -41,5 +41,6 @@ export function render(root, { refresh }) {
           confirmLabel: 'حذف دائمی', danger: true,
           onConfirm: () => { cust.removeCustomer(c.id, key); toast('حذف دائمی انجام شد'); refresh(); }
         }) }, 'حذف دائمی') : null))))));
+  rows.forEach((c, i) => openOnBodyClick(table.querySelectorAll('tbody tr')[i], c.id, refresh));
   root.append(h('div', { class: 'table-wrap' }, table));
 }

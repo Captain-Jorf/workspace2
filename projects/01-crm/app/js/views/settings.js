@@ -95,8 +95,7 @@ export function render(root, { refresh }) {
       info(t('set.storageLocation'), t('set.storageValue')),
       info(t('set.storageUsed'), `${used} KB`),
       info('localStorage', store.storageAvailable() ? t('set.storageOk') : t('set.storageOff')),
-      info(t('set.offline'), 'Service Worker · sw.js'),
-      info(t('set.keys'), t('set.keysList'))
+      info(t('set.offline'), 'Service Worker · sw.js')
     ])
   );
 }

@@ -21,7 +21,8 @@ const ACTIONS = {
   customer: ['btn.newCustomer', 'ghost'],
   invoice: ['btn.newInvoice', 'primary'],
   note: ['btn.newNote', 'primary'],
-  csv: ['btn.csv', '']
+  csv: ['btn.csv', ''],
+  print: ['btn.print', 'ghost']
 };
 
 const FILTERS = [['all', 'filter.all'], ['today', 'filter.today'], ['overdue', 'filter.overdue'], ['open', 'filter.open'], ['done', 'filter.done']];
@@ -160,6 +161,19 @@ export function runAction(a) {
   if (a === 'invoice') openInvoiceForm({ onSaved: refresh });
   if (a === 'note') openNoteForm({ onSaved: refresh });
   if (a === 'csv') exportCustomersCsv();
+  if (a === 'print') printCurrentView();
+}
+
+/** چاپ صفحه‌ی جاری: بدنه‌ی نما بدون دکمه و فیلتر در #printArea، سپس چاپ */
+function printCurrentView() {
+  const area = $('#printArea');
+  clear(area);
+  const body = $('#view').cloneNode(true);
+  body.querySelectorAll('button, input, select, textarea, .toolbar, .chips').forEach((el) => el.remove());
+  area.append(h('div', { class: 'print-sheet' },
+    h('header', {}, h('h1', { text: $('#pageTitle').textContent }), h('p', { text: $('#pageSub').textContent })),
+    body));
+  window.print();
 }
 
 function renderView() {
