@@ -1,0 +1,15 @@
+{
+  "name": "CRM ساده",
+  "short_name": "CRM",
+  "description": "مدیریت مشتری و فروش، آفلاین‌اول، داده روی دستگاه",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#dff1fb",
+  "theme_color": "#dff1fb",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

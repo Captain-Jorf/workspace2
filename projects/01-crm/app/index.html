@@ -2,418 +2,62 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CRM ساده · برنامه‌ی دمو</title>
-<link rel="stylesheet" href="css/styles.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#dff1fb">
+<meta name="description" content="CRM ساده؛ آفلاین‌اول، داده روی دستگاه، برای پنج کسب‌وکار نمونه.">
+<title>CRM ساده</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/print.css" media="print">
 </head>
 <body>
+<a class="skip" href="#view">رفتن به محتوا</a>
 
-<section id="start" aria-label="انتخاب کسب‌وکار دمو" hidden>
-  <h1>کدام کسب‌وکار دمو را امتحان می‌کنی؟</h1>
-  <p class="lead">هر کسب‌وکار داده‌ی ساختگی و فیلدهای مخصوص خودش را دارد. داده‌ها فقط روی همین دستگاه ذخیره می‌شوند.</p>
-  <div class="biz-grid" id="bizGrid"></div>
+<section id="start" class="start" aria-labelledby="startTitle" hidden>
+  <header class="start-head glass">
+    <h1 id="startTitle">CRM ساده</h1>
+    <p>یک کسب‌وکار نمونه را انتخاب کن. داده‌ها روی همین دستگاه ذخیره می‌شوند و بدون اینترنت کار می‌کنند.</p>
+  </header>
+  <div id="bizGrid" class="biz-grid"></div>
+  <p class="footnote">همه‌ی اطلاعات نمونه ساختگی‌اند.</p>
 </section>
 
-<div class="shell" id="shell" hidden>
-  <aside class="glass side" aria-label="منوی اصلی">
-    <div class="logo"><span>●</span> <span class="txt">CRM</span> ساده</div>
-    <button class="nav" type="button" data-view="today" aria-current="page"><span class="ic">◉</span><span class="label">امروز</span><span class="badge" id="badgeToday">۰</span></button>
-    <button class="nav" type="button" data-view="notices"><span class="ic">✉</span><span class="label">اطلاعیه‌ها</span></button>
-    <button class="nav" type="button" data-view="customers"><span class="ic">☷</span><span class="label">مشتری‌ها</span></button>
-    <button class="nav" type="button" data-view="invoices"><span class="ic">▤</span><span class="label">فاکتورها</span></button>
-    <button class="nav" type="button" data-view="notes"><span class="ic">✎</span><span class="label">یادداشت‌ها</span></button>
-    <button class="nav" type="button" data-view="archive"><span class="ic">▣</span><span class="label">بایگانی</span></button>
-    <button class="nav" type="button" data-view="reports"><span class="ic">▥</span><span class="label">گزارش‌ها</span></button>
-    <div class="sep"></div>
-    <button class="nav" type="button" id="sideSettings"><span class="ic">⚙</span><span class="label">تنظیمات</span></button>
-    <button class="nav" type="button" id="sideSwitch"><span class="ic">⇄</span><span class="label">تغییر کسب‌وکار</span></button>
+<div id="shell" class="shell" hidden>
+  <aside id="side" class="side glass" aria-label="منوی اصلی">
+    <div class="brand">CRM <span>ساده</span></div>
+    <nav id="navList" class="nav-list"></nav>
   </aside>
 
-  <main>
-    <header class="glass top">
-      <div class="top-row">
+  <div class="main">
+    <header class="topbar glass">
+      <div class="title-row">
         <div class="title-box">
-          <button class="icon" id="toggleSide" type="button" aria-label="باز و بسته کردن منو" aria-expanded="true">☰</button>
-          <div>
-            <h1 id="pageTitle">امروز</h1>
-            <p id="pageSub"></p>
-          </div>
+          <h1 id="pageTitle"></h1>
+          <p id="pageSub"></p>
         </div>
-        <div class="actions">
-          <input id="q" class="input search" type="search" placeholder="جستجوی نام یا موبایل (کلید /)" aria-label="جستجو">
-          <span class="pill" id="sync">ذخیره روی دستگاه</span>
-          <button class="btn primary" id="newNotice" type="button">اطلاعیه‌ی جدید <kbd>N</kbd></button>
-          <button class="btn" id="newCustomer" type="button">مشتری جدید</button>
-          <button class="btn" id="settingsBtn" type="button">تنظیمات</button>
-          <button class="icon theme-btn" id="themeBtn" type="button" aria-label="تغییر حالت شب و روز" title="حالت شب / روز">☾</button>
-        </div>
+        <button id="toggleSide" class="icon-btn" type="button" aria-expanded="false" aria-controls="side" aria-label="باز و بسته کردن منو">☰</button>
       </div>
-      <div class="filters" id="filters" role="group" aria-label="فیلتر سریع">
-        <button class="chip" type="button" data-filter="all" aria-pressed="true">همه</button>
-        <button class="chip" type="button" data-filter="today" aria-pressed="false">امروز</button>
-        <button class="chip" type="button" data-filter="overdue" aria-pressed="false">عقب‌افتاده</button>
-        <button class="chip" type="button" data-filter="open" aria-pressed="false">باز</button>
-        <button class="chip" type="button" data-filter="won" aria-pressed="false">انجام‌شده‌ها</button>
+      <div class="top-tools">
+        <input id="q" class="input search" type="search" placeholder="جستجوی نام یا موبایل (کلید /)" aria-label="جستجو" autocomplete="off">
+        <div id="filters" class="chips" role="group" aria-label="فیلتر فهرست"></div>
+        <div id="headerActions" class="header-actions"></div>
       </div>
     </header>
 
-    <section class="view on" id="v-today" aria-label="امروز">
-      <div class="kpis" id="kpisToday"></div>
-      <div class="row-head">
-        <div class="section-title">پیگیری‌های امروز و عقب‌افتاده</div>
-        <button class="btn" id="icsBtn" type="button">خروجی تقویم (ICS)</button>
-      </div>
-      <div class="list" id="todayList"></div>
-    </section>
-
-    <section class="view" id="v-notices" aria-label="اطلاعیه‌ها">
-      <div class="glass bulk" id="noticeBulk" hidden>
-        <span class="count" id="noticeCount"></span>
-        <select class="input" id="bulkStage" style="width:auto;height:36px" aria-label="انتقال به مرحله"></select>
-        <button class="btn sm" id="bulkRemind" type="button">یادآوری فردا</button>
-        <button class="btn sm" id="bulkArchive" type="button">بایگانی</button>
-        <button class="btn sm danger" id="bulkDelete" type="button">حذف</button>
-        <button class="btn sm ghost" id="bulkClear" type="button">لغو انتخاب</button>
-      </div>
-      <div class="board" id="board"></div>
-    </section>
-
-    <section class="view" id="v-customers" aria-label="مشتری‌ها">
-      <div class="row-head">
-        <div class="tools">
-          <button class="btn" id="importBtn" type="button">وارد کردن CSV</button>
-          <button class="btn" id="mergeBtn" type="button">ادغام مشتری‌های تکراری</button>
-          <button class="btn" id="colsBtn" type="button">ستون‌های جدول</button>
-          <button class="btn" id="custCsv" type="button">خروجی CSV</button>
-        </div>
-      </div>
-      <div class="glass bulk" id="custBulk" hidden>
-        <span class="count" id="custCount"></span>
-        <button class="btn sm" id="custArchive" type="button">بایگانی انتخاب‌شده‌ها</button>
-        <button class="btn sm ghost" id="custClear" type="button">لغو انتخاب</button>
-      </div>
-      <div class="glass table-wrap">
-        <table>
-          <thead><tr id="custHead"></tr></thead>
-          <tbody id="custBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="view" id="v-invoices" aria-label="فاکتورها">
-      <div class="kpis" id="kpisInv"></div>
-      <div class="row-head">
-        <div class="tools">
-          <button class="btn primary" id="newInv" type="button">فاکتور جدید</button>
-          <button class="btn" id="invCsv" type="button">خروجی CSV فاکتورها</button>
-        </div>
-        <select class="input" id="invRange" style="width:auto;height:38px" aria-label="بازه‌ی زمانی">
-          <option value="0">همه‌ی زمان‌ها</option>
-          <option value="7">۷ روز اخیر</option>
-          <option value="30">۳۰ روز اخیر</option>
-          <option value="90">۹۰ روز اخیر</option>
-        </select>
-      </div>
-      <div class="glass table-wrap">
-        <table>
-          <thead><tr><th>شماره</th><th>مشتری</th><th>تاریخ صدور</th><th>سررسید</th><th>مبلغ</th><th>وضعیت</th><th>عملیات</th></tr></thead>
-          <tbody id="invBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="view" id="v-notes" aria-label="یادداشت‌ها">
-      <div class="row-head">
-        <div class="tools">
-          <button class="btn primary" id="newNote" type="button">یادداشت جدید</button>
-        </div>
-        <input id="noteQ" class="input search" type="search" placeholder="جستجوی یادداشت" aria-label="جستجوی یادداشت">
-      </div>
-      <div class="list" id="noteList"></div>
-    </section>
-
-    <section class="view" id="v-archive" aria-label="بایگانی">
-      <div class="section-title">اطلاعیه‌های بایگانی‌شده</div>
-      <div class="list" id="archList"></div>
-    </section>
-
-    <section class="view" id="v-reports" aria-label="گزارش‌ها">
-      <div class="row-head">
-        <select class="input" id="reportRange" style="width:auto;height:38px" aria-label="بازه‌ی زمانی گزارش">
-          <option value="0">همه‌ی زمان‌ها</option>
-          <option value="7">۷ روز اخیر</option>
-          <option value="30">۳۰ روز اخیر</option>
-          <option value="90">۹۰ روز اخیر</option>
-        </select>
-        <button class="btn" id="reportPdf" type="button">خروجی PDF گزارش</button>
-      </div>
-      <div class="kpis" id="kpisReports"></div>
-      <div class="two">
-        <div class="glass bars"><div class="section-title">اطلاعیه‌ها به تفکیک مرحله</div><div id="stageBars"></div></div>
-        <div class="glass bars"><div class="section-title">منبع آشنایی</div><div id="sourceBars"></div></div>
-      </div>
-      <div class="glass bars"><div class="section-title">بیشترین مبلغ (پنج مشتری برتر)</div><div id="topBars"></div></div>
-    </section>
-  </main>
-</div>
-
-<div class="fixed-note">نمونه‌ی کار با داده‌های ساختگی یک برنامه مدیریت مشتری</div>
-<div id="scrim" class="scrim"></div>
-
-<aside id="drawer" class="glass drawer" aria-hidden="true" aria-labelledby="dtitle">
-  <header><h2 id="dtitle">اطلاعیه‌ی جدید</h2><button id="closeBtn" class="icon" type="button" aria-label="بستن">✕</button></header>
-  <form id="form" novalidate>
-    <div class="field" id="f-name"><label for="name">نام شرکت یا مشتری</label><input id="name" class="input" type="text" autocomplete="off"><div class="err" role="alert"></div></div>
-    <div class="field" id="f-phone"><label for="phone">شماره موبایل</label><input id="phone" class="input" type="tel" inputmode="numeric" placeholder="09129194975"><div class="err" role="alert"></div></div>
-    <div class="field" id="f-source"><label for="source">منبع آشنایی</label>
-      <select id="source" class="input"><option value="">انتخاب کنید</option><option>اینستاگرام</option><option>معرفی دوستان</option><option>وب‌سایت</option><option>تماس ورودی</option><option>نمایشگاه</option></select>
-      <div class="err" role="alert"></div></div>
-    <div class="field"><label for="stage">مرحله</label><select id="stage" class="input"></select></div>
-    <div class="field" id="f-amount"><label for="amount">مبلغ (تومان)</label><input id="amount" class="input" type="text" inputmode="numeric"><div class="hint">برای مراحل پیشرفته‌تر الزامی است.</div><div class="err" role="alert"></div></div>
-    <div id="extraFields"></div>
-    <div class="field"><label for="notes">توضیحات</label><textarea id="notes" class="input area" placeholder="هر نکته‌ای که برای این مشتری لازم است"></textarea></div>
-    <div class="field"><label for="next">پیگیری بعدی</label>
-      <select id="next" class="input"><option value="1">فردا</option><option value="2" selected>۲ روز دیگر (پیشنهادی)</option><option value="7">یک هفته دیگر</option><option value="14">دو هفته دیگر</option></select></div>
-  </form>
-  <footer>
-    <button id="saveBtn" class="btn primary lg" type="submit" form="form">ذخیره <kbd>Ctrl+Enter</kbd></button>
-    <button id="cancelBtn" class="btn ghost" type="button">انصراف</button>
-  </footer>
-</aside>
-
-<div id="callModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="cTitle" aria-hidden="true">
-  <header><h2 id="cTitle">ثبت نتیجه‌ی تماس</h2></header>
-  <div class="sub" id="cSub"></div>
-  <div class="choices" role="group" aria-label="نتیجه">
-    <button class="choice" type="button" data-res="answered" aria-pressed="true">پاسخ داد</button>
-    <button class="choice" type="button" data-res="voicemail" aria-pressed="false">پیام گذاشتم</button>
-    <button class="choice" type="button" data-res="nores" aria-pressed="false">پاسخ نداد</button>
-  </div>
-  <div class="field"><label for="cNote">یادداشت</label><textarea id="cNote" class="input area" placeholder="مثلاً: قیمت را پذیرفت، هفته‌ی بعد پیگیری شود"></textarea></div>
-  <div class="field" style="margin-top:10px"><label for="cNext">پیگیری بعدی</label>
-    <select id="cNext" class="input"><option value="1">فردا</option><option value="2" selected>۲ روز دیگر</option><option value="7">یک هفته دیگر</option><option value="14">دو هفته دیگر</option></select></div>
-  <footer>
-    <button id="cSave" class="btn primary lg" type="button">ثبت و بستن</button>
-    <button id="cCancel" class="btn ghost" type="button">انصراف</button>
-  </footer>
-</div>
-
-<div id="remindModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="rTitle" aria-hidden="true">
-  <header><h2 id="rTitle">یادآوری</h2><button id="rClose" class="icon" type="button" aria-label="بستن">✕</button></header>
-  <div class="sub" id="rSub"></div>
-  <div class="seg">
-    <button class="chip" type="button" data-rem="hour" aria-pressed="true">۱ ساعت دیگر</button>
-    <button class="chip" type="button" data-rem="tomorrow" aria-pressed="false">فردا ساعت ۹</button>
-    <button class="chip" type="button" data-rem="three" aria-pressed="false">۳ روز دیگر</button>
-    <button class="chip" type="button" data-rem="custom" aria-pressed="false">زمان دلخواه</button>
-  </div>
-  <div class="field" id="f-rem-custom" hidden style="margin-top:12px"><label for="rCustom">تاریخ و ساعت</label><input id="rCustom" class="input" type="datetime-local"></div>
-  <footer>
-    <button id="rSave" class="btn primary lg" type="button">ثبت یادآوری</button>
-    <button id="rClear" class="btn danger" type="button">حذف یادآوری</button>
-  </footer>
-</div>
-
-<div id="detailModal" class="glass modal wide" role="dialog" aria-modal="true" aria-labelledby="dName" aria-hidden="true">
-  <header>
-    <div><h2 id="dName"></h2><div class="sub" id="dSub"></div></div>
-    <button id="dClose" class="icon" type="button" aria-label="بستن">✕</button>
-  </header>
-  <div class="seg">
-    <a class="btn call" id="dCall" href="#">تماس</a>
-    <a class="btn wa" id="dWa" href="#" target="_blank" rel="noopener">واتساپ</a>
-    <button class="btn" id="dCallLog" type="button">ثبت تماس</button>
-    <button class="btn" id="dRemind" type="button">یادآوری</button>
-    <button class="btn" id="dArchive" type="button">بایگانی</button>
-    <button class="btn" id="dEdit" type="button">ویرایش</button>
-    <button class="btn" id="dInvoice" type="button">فاکتور جدید</button>
-    <button class="btn danger" id="dDelete" type="button">حذف</button>
-  </div>
-  <h3>گزارش این مشتری</h3>
-  <div class="stats" id="dStats"></div>
-  <h3>مشخصات</h3>
-  <div class="kv" id="dKv"></div>
-  <h3>توضیحات</h3>
-  <div class="notes-box" id="dNotes"></div>
-  <h3>فاکتورهای این مشتری</h3>
-  <div class="timeline" id="dInv"></div>
-  <h3>تاریخچه‌ی فعالیت</h3>
-  <div class="timeline" id="dTimeline"></div>
-</div>
-
-<div id="invModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="invTitle" aria-hidden="true">
-  <header><h2 id="invTitle">فاکتور جدید</h2><button id="invClose" class="icon" type="button" aria-label="بستن">✕</button></header>
-  <div class="sub">فاکتور روی همین دستگاه ثبت می‌شود.</div>
-  <form id="invForm" class="stack" novalidate>
-    <div class="field" id="f-inv-cust"><label for="invCust">مشتری</label><select id="invCust" class="input"></select><div class="err" role="alert"></div></div>
-    <div class="field" id="f-inv-amt"><label for="invAmt">مبلغ (تومان)</label><input id="invAmt" class="input" type="text" inputmode="numeric"><div class="err" role="alert"></div></div>
-    <div class="field"><label for="invDue">مهلت پرداخت</label><select id="invDue" class="input"><option value="7">۷ روز</option><option value="14" selected>۱۴ روز</option><option value="30">۳۰ روز</option></select></div>
-    <div class="field"><label for="invStatus">وضعیت</label><select id="invStatus" class="input"><option value="issued">صادر شده</option><option value="draft">پیش‌نویس</option></select></div>
-    <div class="field"><label for="invNotes">توضیحات فاکتور</label><textarea id="invNotes" class="input area"></textarea></div>
-  </form>
-  <footer><button id="invSave" class="btn primary lg" type="button">ثبت فاکتور</button><button id="invCancel" class="btn ghost" type="button">انصراف</button></footer>
-</div>
-
-<div id="payModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="payTitle" aria-hidden="true">
-  <header><h2 id="payTitle">ثبت پرداخت</h2><button id="payClose" class="icon" type="button" aria-label="بستن">✕</button></header>
-  <div class="sub" id="paySub"></div>
-  <form id="payForm" class="stack" novalidate>
-    <div class="field" id="f-pay-amt"><label for="payAmt">مبلغ پرداختی (تومان)</label><input id="payAmt" class="input" type="text" inputmode="numeric"><div class="err" role="alert"></div></div>
-  </form>
-  <footer>
-    <button id="paySave" class="btn primary lg" type="button">ثبت پرداخت</button>
-    <button id="payFull" class="btn" type="button">پرداخت کامل</button>
-    <button id="payCancel" class="btn ghost" type="button">انصراف</button>
-  </footer>
-</div>
-
-<div id="noteModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="nTitle" aria-hidden="true">
-  <header><h2 id="nTitle">یادداشت جدید</h2><button id="nClose" class="icon" type="button" aria-label="بستن">✕</button></header>
-  <div class="sub">فقط برای خودت است و در خروجی‌ها دیده نمی‌شود.</div>
-  <form id="noteForm" class="stack" novalidate>
-    <div class="field" id="f-n-title"><label for="nTitleInput">عنوان</label><input id="nTitleInput" class="input" type="text"><div class="err" role="alert"></div></div>
-    <div class="field"><label for="nCust">مربوط به مشتری (اختیاری)</label><select id="nCust" class="input"></select></div>
-    <div class="field"><label for="nBody">متن یادداشت</label><textarea id="nBody" class="input area" style="min-height:160px"></textarea></div>
-  </form>
-  <footer>
-    <button id="nSave" class="btn primary lg" type="button">ذخیره</button>
-    <button id="nDelete" class="btn danger" type="button" hidden>حذف</button>
-    <button id="nCancel" class="btn ghost" type="button">انصراف</button>
-  </footer>
-</div>
-
-<div id="shareModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="shTitle" aria-hidden="true">
-  <header><h2 id="shTitle">اشتراک گذاری فاکتور</h2><button id="shClose" class="icon" type="button" aria-label="بستن">✕</button></header>
-  <div class="sub" id="shSub"></div>
-  <img id="shPreview" alt="پیش‌نمایش فاکتور" style="width:100%;border-radius:14px;border:1px solid var(--line);margin-bottom:8px">
-  <div class="hint" id="shSendHint" style="font-size:13px;color:var(--muted)"></div>
-  <footer>
-    <button id="shSend" class="btn primary lg" type="button">ارسال با برنامه‌ها</button>
-    <button id="shDownload" class="btn lg" type="button">دانلود عکس</button>
-    <button id="shCancel" class="btn ghost" type="button">بستن</button>
-  </footer>
-</div>
-
-<div id="mergeModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="mTitle" aria-hidden="true">
-  <header><h2 id="mTitle">ادغام مشتری‌های تکراری</h2><button id="mClose" class="icon" type="button" aria-label="بستن">✕</button></header>
-  <div class="sub">مشتری‌هایی که شماره‌ی موبایل یکسان دارند. قدیمی‌ترین رکورد نگه داشته می‌شود و بقیه به آن منتقل می‌شوند.</div>
-  <div class="list" id="mergeList"></div>
-  <footer>
-    <button id="mRun" class="btn primary lg" type="button">ادغام همه</button>
-    <button id="mCancel" class="btn ghost" type="button">انصراف</button>
-  </footer>
-</div>
-
-<div id="colsModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="cTitle2" aria-hidden="true">
-  <header><h2 id="cTitle2">ستون‌های جدول</h2><button id="colsClose" class="icon" type="button" aria-label="بستن">✕</button></header>
-  <div class="sub">ستون‌هایی را که لازم داری نشان بده.</div>
-  <div class="list" id="colsList"></div>
-  <footer><button id="colsDone" class="btn primary lg" type="button">تأیید</button></footer>
-</div>
-
-<div id="importModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="iTitle" aria-hidden="true">
-  <header><h2 id="iTitle">وارد کردن CSV</h2><button id="iClose" class="icon" type="button" aria-label="بستن">✕</button></header>
-  <div class="sub">فایل باید ستون‌های نام، موبایل، منبع، مرحله، مبلغ را داشته باشد (نام ستون‌ها فارسی یا انگلیسی).</div>
-  <div class="list" id="importResult"></div>
-  <footer>
-    <button id="iPick" class="btn primary lg" type="button">انتخاب فایل</button>
-    <button id="iDone" class="btn ghost" type="button">بستن</button>
-  </footer>
-</div>
-<input type="file" id="csvFile" accept=".csv,text/csv" hidden>
-
-<div id="settingsModal" class="glass modal wide" role="dialog" aria-modal="true" aria-labelledby="sTitle" aria-hidden="true">
-  <header><h2 id="sTitle">تنظیمات</h2><button id="sClose" class="icon" type="button" aria-label="بستن">✕</button></header>
-  <div class="seg" style="margin-bottom:12px">
-    <button class="chip" type="button" data-stab="look" aria-pressed="true">ظاهر</button>
-    <button class="chip" type="button" data-stab="profile" aria-pressed="false">پروفایل و حساب</button>
-  </div>
-
-  <div id="pane-look" class="stack">
-    <div class="setting-row">
-      <div><b>حالت نمایش</b><br><small>حالت شب یا روز</small></div>
-      <div class="seg">
-        <button class="chip" type="button" data-theme-set="light" aria-pressed="true">روز</button>
-        <button class="chip" type="button" data-theme-set="dark" aria-pressed="false">شب</button>
-      </div>
-    </div>
-    <div class="setting-row">
-      <div><b>اندازه‌ی نوشته</b><br><small id="fontLabel">۱۰۰٪</small></div>
-      <div class="seg">
-        <button class="btn sm" type="button" id="fontDown">A−</button>
-        <button class="btn sm" type="button" id="fontReset">پیش‌فرض</button>
-        <button class="btn sm" type="button" id="fontUp">A+</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="pane-profile" class="stack" hidden>
-    <div class="auth-box" id="authBox">
-      <div class="seg" id="authTabs">
-        <button class="chip" type="button" data-tab="login" aria-pressed="true">ورود</button>
-        <button class="chip" type="button" data-tab="signup" aria-pressed="false">ثبت نام</button>
-      </div>
-      <form id="loginForm" novalidate>
-        <div class="field" id="f-l-phone"><label for="lPhone">شماره موبایل</label><input id="lPhone" class="input" type="tel" inputmode="numeric" placeholder="09129194975" autocomplete="username"><div class="err" role="alert"></div></div>
-        <div class="field" id="f-l-pw"><label for="lPw">رمز عبور</label><input id="lPw" class="input" type="password" autocomplete="current-password"><div class="err" role="alert"></div></div>
-        <button id="loginBtn" class="btn primary" type="submit">ورود به حساب</button>
-      </form>
-      <form id="signupForm" novalidate hidden>
-        <div class="field" id="f-s-name"><label for="sName">نام و نام خانوادگی</label><input id="sName" class="input" type="text" autocomplete="name"><div class="err" role="alert"></div></div>
-        <div class="field" id="f-s-phone"><label for="sPhone">شماره موبایل</label><input id="sPhone" class="input" type="tel" inputmode="numeric" placeholder="09129194975" autocomplete="username"><div class="err" role="alert"></div></div>
-        <div class="field" id="f-s-pw"><label for="sPw">رمز عبور (حداقل ۶ نویسه)</label><input id="sPw" class="input" type="password" autocomplete="new-password"><div class="err" role="alert"></div></div>
-        <div class="field" id="f-s-pw2"><label for="sPw2">تکرار رمز عبور</label><input id="sPw2" class="input" type="password" autocomplete="new-password"><div class="err" role="alert"></div></div>
-        <button id="signupBtn" class="btn primary" type="submit">ساخت حساب</button>
-      </form>
-      <div class="hint" style="font-size:12px;color:var(--muted)">حساب‌ها فقط روی همین دستگاه نگه‌داری می‌شوند؛ این بخش برای نمایش جریان ورود است، نه احراز هویت واقعی.</div>
+    <div class="status-line" aria-live="polite">
+      <span id="netState" class="pill"></span>
+      <span id="saveState" class="pill"></span>
     </div>
 
-    <div id="accountBox" class="stack" hidden>
-      <div class="auth-box">
-        <div class="sub" id="accText" style="margin:0"></div>
-        <button id="logoutBtn" class="btn" type="button">خروج از حساب</button>
-      </div>
-      <form id="pForm" class="auth-box" novalidate>
-        <div class="field"><label for="pName">نام و نام خانوادگی</label><input id="pName" class="input" type="text"></div>
-        <div class="field"><label for="pRole">سمت</label><input id="pRole" class="input" type="text" placeholder="مثلاً مدیر فروش"></div>
-        <div class="field"><label for="pCompany">نام کسب‌وکار</label><input id="pCompany" class="input" type="text"></div>
-        <button id="pSave" class="btn primary" type="button">ذخیره‌ی پروفایل</button>
-      </form>
-      <form id="pwForm" class="auth-box" novalidate>
-        <b>تغییر رمز عبور</b>
-        <div class="field" id="f-c-old"><label for="cOld">رمز فعلی</label><input id="cOld" class="input" type="password" autocomplete="current-password"><div class="err" role="alert"></div></div>
-        <div class="field" id="f-c-new"><label for="cNew">رمز جدید (حداقل ۶ نویسه)</label><input id="cNew" class="input" type="password" autocomplete="new-password"><div class="err" role="alert"></div></div>
-        <div class="field" id="f-c-new2"><label for="cNew2">تکرار رمز جدید</label><input id="cNew2" class="input" type="password" autocomplete="new-password"><div class="err" role="alert"></div></div>
-        <button id="cSavePw" class="btn" type="button">تغییر رمز</button>
-      </form>
-      <div class="danger-zone">
-        <b>حذف حساب</b>
-        <small style="color:var(--muted)">حساب و همه‌ی داده‌های این دستگاه پاک می‌شود. برای تأیید، کلمه‌ی «حذف» را بنویس.</small>
-        <div class="field" id="f-del"><input id="delWord" class="input" type="text" placeholder="حذف"><div class="err" role="alert"></div></div>
-        <button id="delAccount" class="btn danger" type="button">حذف حساب و داده‌ها</button>
-      </div>
-    </div>
+    <main id="view" class="content" tabindex="-1"></main>
+    <footer id="footnote" class="footnote"></footer>
   </div>
-  <footer><button id="sDone" class="btn primary lg" type="button">بستن</button></footer>
 </div>
 
-<div id="printArea"></div>
-
-<div id="toast" class="glass toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastAct" class="btn sm" type="button" hidden></button></div>
-
-<script src="js/config.js"></script>
-<script src="js/core/ui.js"></script>
-<script src="js/core/store.js"></script>
-<script src="js/core/tools.js"></script>
-<script src="js/features/leadForm.js"></script>
-<script src="js/features/detail.js"></script>
-<script src="js/features/today.js"></script>
-<script src="js/features/notices.js"></script>
-<script src="js/features/customers.js"></script>
-<script src="js/features/notes.js"></script>
-<script src="js/features/invoices.js"></script>
-<script src="js/features/reports.js"></script>
-<script src="js/features/settings.js"></script>
-<script src="js/main.js"></script>
+<div id="layer"></div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<div id="printArea" class="print-area" aria-hidden="true"></div>
+<script type="module" src="js/main.js"></script>
 </body>
 </html>
