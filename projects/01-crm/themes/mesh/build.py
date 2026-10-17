@@ -32,9 +32,9 @@ THEMES = [
     dict(slug="rose-gold", title="رز گلد", base="#fbf1ef",
          blobs=[("#f5c6b8", 12, 12), ("#e9b8c9", 88, 14), ("#d9a48f", 78, 88), ("#fbe3d6", 20, 86)],
          ink="#3b221d", muted="#8c6158", accent="#b5624a", card="rgba(255,255,255,.62)", border="rgba(255,255,255,.8)", dark=False),
-    dict(slug="arctic-ice", title="یخ قطبی", base="#eef6fb",
-         blobs=[("#bae6fd", 10, 10), ("#e0f2fe", 90, 15), ("#c7d2fe", 78, 90), ("#a5f3fc", 15, 88)],
-         ink="#0b2233", muted="#557086", accent="#0284c7", card="rgba(255,255,255,.6)", border="rgba(255,255,255,.85)", dark=False),
+    dict(slug="arctic-ice", title="یخ قطبی", base="#f3f9fd", blur=26,
+         blobs=[("#d6eefb", 10, 10), ("#e9f6ff", 90, 14), ("#cfe3fb", 78, 90), ("#c9f0f5", 16, 88)],
+         ink="#12293a", muted="#5b7689", accent="#3f8fd2", card="rgba(255,255,255,.38)", border="rgba(255,255,255,.9)", dark=False),
     dict(slug="forest-mist", title="مه جنگلی", base="#eef3ec",
          blobs=[("#9bd3ae", 12, 12), ("#c7e9c0", 88, 16), ("#6fae8c", 78, 88), ("#d8efd0", 22, 86)],
          ink="#1a2b1f", muted="#5c7262", accent="#2f855a", card="rgba(255,255,255,.6)", border="rgba(255,255,255,.8)", dark=False),
@@ -109,9 +109,9 @@ body {{
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 22px;
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  box-shadow: 0 10px 30px rgba(0,0,0,{ '.25' if dark else '.06' });
+  backdrop-filter: blur({t.get('blur', 18)}px) saturate(140%);
+  -webkit-backdrop-filter: blur({t.get('blur', 18)}px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 10px 30px rgba(20,60,100,{'.25' if dark else '.08'});
 }}
 aside.card {{ padding: 22px 16px; display: flex; flex-direction: column; gap: 6px; }}
 .logo {{ font-weight: 700; font-size: 20px; padding: 6px 12px 18px; }}
