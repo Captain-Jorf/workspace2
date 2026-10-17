@@ -17,7 +17,7 @@ export const meta = {
   label: 'مشتری‌ها',
   icon: '☷',
   title: 'مشتری‌ها',
-  sub: () => `${BUSINESSES[store.get().activeBiz].title} · جستجو با نام، مسئول یا موبایل (کلید /)`,
+  sub: () => `${BUSINESSES[store.get().activeBiz].title} · جستجو با نام، مسئول یا موبایل`,
   chips: true,
   actions: ['customer', 'csv']
 };

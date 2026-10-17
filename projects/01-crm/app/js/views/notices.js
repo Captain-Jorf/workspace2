@@ -32,7 +32,7 @@ export function render(root, { refresh }) {
   const visible = cust.list({}, key).filter((c) => cust.matchesFilter(c, ctx.filter, now, key) && cust.matchesQuery(c, q));
   const total = visible.length;
 
-  root.append(h('p', { class: 'muted small', text: `${plural(total, 'مورد', 'مورد')} نمایش داده می‌شود · کارت‌ها را بکش یا با ← → جابه‌جا کن` }));
+  root.append(h('p', { class: 'muted small', text: `${plural(total, 'مورد', 'مورد')} نمایش داده می‌شود` }));
   if (!total) {
     root.append(emptyState('موردی پیدا نشد', 'فیلتر یا جستجو را تغییر بده، یا یک اطلاعیه‌ی جدید ثبت کن.'));
   }
