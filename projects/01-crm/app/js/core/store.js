@@ -91,15 +91,25 @@
     return s;
   }
 
+  // اگر مرورگر دسترسی به localStorage را ندهد، برنامه با حافظه‌ی موقت کار می‌کند و خطا نمی‌دهد
+  let memRaw = null;
+  function readRaw() {
+    try { return localStorage.getItem(cfg.KEY); } catch (e) { return memRaw; }
+  }
+  function writeRaw(text) {
+    memRaw = text;
+    try { localStorage.setItem(cfg.KEY, text); } catch (e) { /* فقط حافظه‌ی موقت */ }
+  }
+
   function load() {
     let raw = null;
-    try { raw = JSON.parse(localStorage.getItem(cfg.KEY)); } catch (e) { raw = null; }
+    try { raw = JSON.parse(readRaw()); } catch (e) { raw = null; }
     state = normalize(raw);
     return state;
   }
 
   function save() {
-    localStorage.setItem(cfg.KEY, JSON.stringify(state));
+    writeRaw(JSON.stringify(state));
     UI.$("sync").textContent = "ذخیره شد · روی دستگاه";
   }
 

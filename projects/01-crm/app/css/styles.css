@@ -118,7 +118,7 @@ main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .bulk .count { font-weight: 700; margin-inline-end: auto; }
 .pick { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
 
-.board { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; align-items: start; }
+.board { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 14px; align-items: start; }
 .col { padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 240px; transition: background .15s; }
 .col.over-drop { background: var(--hover); }
 .col header { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; font-weight: 600; }
@@ -212,7 +212,6 @@ tbody tr.dim { opacity: .55; }
 
 @media (max-width: 1100px) {
   .kpis { grid-template-columns: repeat(2, 1fr); }
-  .board { grid-template-columns: repeat(4, minmax(240px, 1fr)); overflow-x: auto; }
 }
 @media (max-width: 760px) {
   .shell, .shell.collapsed { grid-template-columns: 1fr; padding: 10px; }
