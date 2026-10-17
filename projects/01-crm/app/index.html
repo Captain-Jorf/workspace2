@@ -47,7 +47,7 @@ a { color:inherit; }
 /* ---------- پوسته ---------- */
 .shell { display:grid; grid-template-columns:var(--side-w) 1fr; gap:20px; padding:20px; min-height:100vh; transition:grid-template-columns .2s; }
 .shell.collapsed { grid-template-columns:76px 1fr; }
-.side { padding:18px 12px; display:flex; flex-direction:column; gap:6px; align-self:start; position:sticky; top:20px; }
+.side { z-index:6; padding:18px 12px; display:flex; flex-direction:column; gap:6px; align-self:start; position:sticky; top:20px; }
 .logo { font-weight:700; font-size:20px; padding:6px 10px 14px; white-space:nowrap; overflow:hidden; }
 .logo span { color:var(--accent); }
 .nav { display:flex; align-items:center; gap:10px; text-align:start; background:none; border:0; padding:11px 12px; border-radius:14px; color:var(--muted); cursor:pointer; font-weight:500; white-space:nowrap; }
@@ -63,7 +63,7 @@ a { color:inherit; }
 .badge { font-size:12px; background:var(--danger); color:#fff; border-radius:999px; padding:1px 8px; min-width:22px; text-align:center; }
 
 main { display:flex; flex-direction:column; gap:16px; min-width:0; }
-.top { padding:16px 18px; display:flex; flex-direction:column; gap:12px; }
+.top { position:relative; z-index:6; padding:16px 18px; display:flex; flex-direction:column; gap:12px; }
 .top-row { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
 .title-box { display:flex; align-items:center; gap:12px; min-width:0; }
 .title-box h1 { font-size:24px; font-weight:700; white-space:nowrap; }
@@ -144,8 +144,8 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
 /* ---------- کشو و پنجره ---------- */
 .scrim { position:fixed; inset:0; background:rgba(23,48,63,.18); opacity:0; pointer-events:none; transition:opacity .2s; z-index:5; }
 .scrim.on { opacity:1; pointer-events:auto; }
-.drawer { position:fixed; top:16px; bottom:16px; left:16px; width:min(460px, calc(100% - 32px)); padding:22px; transform:translateX(-120%); transition:transform .25s ease; display:flex; flex-direction:column; z-index:10; }
-.drawer.on { transform:translateX(0); }
+.drawer { visibility:hidden; transition:transform .25s ease, visibility .25s; position:fixed; top:16px; bottom:16px; left:16px; width:min(460px, calc(100% - 32px)); padding:22px; transform:translateX(-120%); transition:transform .25s ease; display:flex; flex-direction:column; z-index:10; }
+.drawer.on { transform:translateX(0); visibility:visible; }
 .drawer header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
 .drawer h2 { font-size:19px; }
 .drawer form { display:flex; flex-direction:column; gap:12px; overflow:auto; flex:1; padding:2px; }
@@ -157,8 +157,8 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
 .field.bad .input { border-color:var(--danger); }
 .drawer footer { display:flex; gap:10px; padding-top:12px; border-top:1px solid rgba(23,48,63,.08); margin-top:6px; }
 
-.modal { position:fixed; top:50%; left:50%; transform:translate(-50%,-46%); width:min(520px, calc(100% - 32px)); max-height:calc(100vh - 40px); overflow:auto; padding:22px; z-index:12; opacity:0; pointer-events:none; transition:all .2s; }
-.modal.on { opacity:1; pointer-events:auto; transform:translate(-50%,-50%); }
+.modal { visibility:hidden; position:fixed; top:50%; left:50%; transform:translate(-50%,-46%); width:min(520px, calc(100% - 32px)); max-height:calc(100vh - 40px); overflow:auto; padding:22px; z-index:12; opacity:0; pointer-events:none; transition:all .2s; }
+.modal.on { visibility:visible; opacity:1; pointer-events:auto; transform:translate(-50%,-50%); }
 .modal.wide { width:min(820px, calc(100% - 32px)); }
 .modal header { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:6px; }
 .modal h2 { font-size:21px; }
@@ -204,6 +204,9 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
   .fixed-note { white-space:normal; text-align:center; width:92%; border-radius:16px; }
 }
 @media (prefers-reduced-motion:reduce) { * { transition:none !important; animation:none !important; } }
+.auth-box { display:flex; flex-direction:column; gap:10px; padding:14px; border-radius:16px; background:rgba(255,255,255,.45); border:1px solid var(--line); margin-bottom:6px; }
+.auth-box form { display:flex; flex-direction:column; gap:10px; }
+.auth-tabs { display:flex; gap:8px; }
 .row-head { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
 .notes-box { padding:12px 14px; border-radius:14px; background:rgba(255,255,255,.5); border:1px solid var(--line); font-size:14px; line-height:1.9; white-space:pre-wrap; min-height:44px; }
 .st { display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; background:rgba(255,255,255,.7); border:1px solid var(--line); white-space:nowrap; }
@@ -383,7 +386,29 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
 <!-- پروفایل -->
 <div id="profileModal" class="glass modal" role="dialog" aria-modal="true" aria-labelledby="pTitle" aria-hidden="true">
   <header><h2 id="pTitle">پروفایل کاربر</h2><button id="pClose" class="icon" type="button" aria-label="بستن">✕</button></header>
-  <div class="sub">این اطلاعات فقط روی همین دستگاه ذخیره می‌شود.</div>
+  <div class="auth-box" id="authBox">
+    <div class="auth-tabs" id="authTabs">
+      <button class="chip" type="button" data-tab="login" aria-pressed="true">ورود</button>
+      <button class="chip" type="button" data-tab="signup" aria-pressed="false">ثبت نام</button>
+    </div>
+    <form id="loginForm" novalidate>
+      <div class="field" id="f-l-phone"><label for="lPhone">شماره موبایل</label><input id="lPhone" class="input" type="tel" inputmode="numeric" placeholder="09129194975" autocomplete="username"><div class="err" role="alert"></div></div>
+      <div class="field" id="f-l-pw"><label for="lPw">رمز عبور</label><input id="lPw" class="input" type="password" autocomplete="current-password"><div class="err" role="alert"></div></div>
+      <button id="loginBtn" class="btn primary" type="submit">ورود به حساب</button>
+    </form>
+    <form id="signupForm" novalidate hidden>
+      <div class="field" id="f-s-name"><label for="sName">نام و نام خانوادگی</label><input id="sName" class="input" type="text" autocomplete="name"><div class="err" role="alert"></div></div>
+      <div class="field" id="f-s-phone"><label for="sPhone">شماره موبایل</label><input id="sPhone" class="input" type="tel" inputmode="numeric" placeholder="09129194975" autocomplete="username"><div class="err" role="alert"></div></div>
+      <div class="field" id="f-s-pw"><label for="sPw">رمز عبور (حداقل ۶ نویسه)</label><input id="sPw" class="input" type="password" autocomplete="new-password"><div class="err" role="alert"></div></div>
+      <div class="field" id="f-s-pw2"><label for="sPw2">تکرار رمز عبور</label><input id="sPw2" class="input" type="password" autocomplete="new-password"><div class="err" role="alert"></div></div>
+      <button id="signupBtn" class="btn primary" type="submit">ساخت حساب</button>
+    </form>
+    <div id="accountBox" hidden>
+      <div class="sub" id="accText" style="margin:0"></div>
+      <button id="logoutBtn" class="btn danger" type="button">خروج از حساب</button>
+    </div>
+    <div class="hint" style="font-size:12px;color:var(--muted)">حساب‌ها فقط روی همین دستگاه نگه‌داری می‌شوند؛ این بخش برای نمایش جریان ورود است، نه احراز هویت واقعی.</div>
+  </div>
   <form id="pForm" novalidate>
     <div class="field"><label for="pName">نام و نام خانوادگی</label><input id="pName" class="input" type="text"></div>
     <div class="field" style="margin-top:10px"><label for="pRole">سمت</label><input id="pRole" class="input" type="text" placeholder="مثلاً مدیر فروش"></div>
@@ -483,6 +508,8 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
   st.profile = st.profile || { name: "کاربر دمو", role: "مدیر فروش", company: "" };
   st.invoices = Array.isArray(st.invoices) ? st.invoices : [];
   st.nextInv = st.nextInv || 1;
+  st.users = Array.isArray(st.users) ? st.users : [];
+  st.session = st.session || null;
 
   function seedFor(b) {
     const cfg = BIZ[b], now = Date.now();
@@ -967,8 +994,76 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
     removeLead(callId);
   });
 
+  // ---------- ورود و ثبت نام ----------
+  async function hashPw(pw, salt) {
+    const text = salt + ":" + pw;
+    if (window.crypto && window.crypto.subtle && window.TextEncoder) {
+      const buf = await window.crypto.subtle.digest("SHA-256", new window.TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+    }
+    let h = 5381;
+    for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+    return "d" + (h >>> 0).toString(16);
+  }
+  const cleanPhone = (v) => toEn(v).replace(/[\s-]/g, "");
+  const findUser = (phone) => st.users.find((u) => u.phone === phone);
+  function setTab(t) {
+    $("loginForm").hidden = t !== "login"; $("signupForm").hidden = t !== "signup";
+    document.querySelectorAll("#authTabs [data-tab]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.tab === t)));
+  }
+  function clearAuthErrors() {
+    document.querySelectorAll("#authBox .field").forEach((f) => { f.classList.remove("bad"); const e = f.querySelector(".err"); if (e) e.textContent = ""; });
+  }
+  function renderAuth() {
+    const u = st.session ? findUser(st.session) : null;
+    $("accountBox").hidden = !u;
+    $("authTabs").hidden = !!u;
+    if (u) {
+      $("loginForm").hidden = true; $("signupForm").hidden = true;
+      $("accText").textContent = "وارد شده‌ای با " + u.name + " (" + u.phone + ")";
+    } else {
+      setTab($("signupForm").hidden ? "login" : "signup");
+    }
+  }
+  function signIn(u) {
+    st.session = u.phone;
+    st.profile = { name: u.name, role: u.role, company: u.company };
+    save(); applyBizUI(); clearAuthErrors(); $("lPw").value = ""; $("sPw").value = ""; $("sPw2").value = "";
+    renderAuth(); openProfile(true); toast("خوش آمدی، " + u.name);
+  }
+  $("authTabs").addEventListener("click", (e) => { const b = e.target.closest("[data-tab]"); if (b) { clearAuthErrors(); setTab(b.dataset.tab); } });
+  $("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault(); clearAuthErrors();
+    const phone = cleanPhone($("lPhone").value), pw = $("lPw").value;
+    if (!/^09\d{9}$/.test(phone)) { setErr("f-l-phone", "شماره موبایل باید ۱۱ رقم و با 09 شروع شود."); return; }
+    const u = findUser(phone);
+    if (!u) { setErr("f-l-phone", "حسابی با این شماره پیدا نشد. ابتدا ثبت نام کن."); return; }
+    if (!pw) { setErr("f-l-pw", "رمز عبور را وارد کن."); return; }
+    if ((await hashPw(pw, u.salt)) !== u.hash) { setErr("f-l-pw", "رمز عبور درست نیست."); return; }
+    signIn(u);
+  });
+  $("signupForm").addEventListener("submit", async (e) => {
+    e.preventDefault(); clearAuthErrors();
+    const name = $("sName").value.trim(), phone = cleanPhone($("sPhone").value), pw = $("sPw").value, pw2 = $("sPw2").value;
+    let ok = true;
+    if (name.length < 2) { setErr("f-s-name", "نام را حداقل ۲ حرف وارد کن."); ok = false; }
+    if (!/^09\d{9}$/.test(phone)) { setErr("f-s-phone", "شماره موبایل باید ۱۱ رقم و با 09 شروع شود."); ok = false; }
+    else if (findUser(phone)) { setErr("f-s-phone", "با این شماره قبلاً حساب ساخته شده است."); ok = false; }
+    if (pw.length < 6) { setErr("f-s-pw", "رمز عبور حداقل ۶ نویسه باشد."); ok = false; }
+    if (pw2 !== pw) { setErr("f-s-pw2", "رمز عبور و تکرار آن یکی نیستند."); ok = false; }
+    if (!ok) return;
+    const salt = Math.random().toString(36).slice(2, 10);
+    const u = { phone, name, role: "کاربر", company: "", salt, hash: await hashPw(pw, salt) };
+    st.users.push(u);
+    signIn(u);
+  });
+  $("logoutBtn").addEventListener("click", () => {
+    st.session = null; save(); renderAuth(); toast("از حساب خارج شدی.");
+  });
+
   // پروفایل
-  function openProfile() {
+  function openProfile(keepOpen) {
+    if (!keepOpen) { clearAuthErrors(); renderAuth(); }
     $("pName").value = st.profile.name || ""; $("pRole").value = st.profile.role || ""; $("pCompany").value = st.profile.company || "";
     openModal("profileModal");
   }
@@ -981,6 +1076,8 @@ tbody tr:hover { background:rgba(255,255,255,.5); }
     const n = $("pName").value.trim();
     if (n.length < 2) { toast("نام پروفایل را وارد کن."); return; }
     st.profile = { name: n, role: $("pRole").value.trim(), company: $("pCompany").value.trim() };
+    const acc = st.session && findUser(st.session);
+    if (acc) Object.assign(acc, { name: st.profile.name, role: st.profile.role, company: st.profile.company });
     save(); applyBizUI(); closeProfile(); toast("پروفایل ذخیره شد.");
   });
 
