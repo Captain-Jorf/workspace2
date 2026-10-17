@@ -235,3 +235,9 @@ tbody tr.dim { opacity: .55; }
   #printArea table { min-width: 0; }
   #printArea th, #printArea td { border-bottom: 1px solid #ccc; }
 }
+
+/* حالت شب: منوی کشویی و گزینه‌ها باید تیره و خوانا باشند */
+[data-theme="dark"] { color-scheme: dark; }
+[data-theme="dark"] select { background-color: #14283a; color: #e6f0f6; }
+[data-theme="dark"] option { background-color: #14283a; color: #e6f0f6; }
+[data-theme="dark"] option:checked, [data-theme="dark"] option:hover { background-color: #2a5f86; color: #ffffff; }

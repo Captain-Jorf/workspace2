@@ -11,6 +11,9 @@
   let filter = "all";
   let search = "";
 
+  const FILTER_VIEWS = ["notices", "customers"];
+  const SEARCH_VIEWS = ["today", "notices", "customers", "archive"];
+
   const VIEW_TITLE = { today: "امروز", notices: "اطلاعیه‌ها", customers: "مشتری‌ها", invoices: "فاکتورها", notes: "یادداشت‌ها", archive: "بایگانی", reports: "گزارش‌ها" };
 
   function matchesSearch(lead) {
@@ -48,6 +51,8 @@
     document.querySelectorAll(".nav[data-view]").forEach((b) => b.setAttribute("aria-current", b.dataset.view === v ? "page" : "false"));
     document.querySelectorAll(".view").forEach((s) => s.classList.toggle("on", s.id === "v-" + v));
     $("pageTitle").textContent = VIEW_TITLE[v];
+    $("filters").hidden = !FILTER_VIEWS.includes(v);
+    $("q").hidden = !SEARCH_VIEWS.includes(v);
     render();
   }
 
@@ -137,6 +142,11 @@
   document.querySelectorAll(".chip[data-filter]").forEach((c) => c.addEventListener("click", () => setFilter(c.dataset.filter)));
   $("q").addEventListener("input", (e) => { search = e.target.value; render(); });
   $("toggleSide").addEventListener("click", () => setCollapsed(!S().state.ui.collapsed));
+  document.addEventListener("click", (e) => {
+    if (S().state.ui.collapsed || !S().state.business) return;
+    if (e.target.closest && (e.target.closest(".side") || e.target.closest("#toggleSide"))) return;
+    setCollapsed(true);
+  });
   $("newNotice").addEventListener("click", () => CRM.leadForm.open(null));
   $("newCustomer").addEventListener("click", () => CRM.leadForm.open(null));
   $("sideSwitch").addEventListener("click", showStart);

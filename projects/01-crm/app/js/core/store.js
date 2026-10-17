@@ -107,11 +107,16 @@
 
   function seedInvoices(b, now) {
     const list = state.leads.filter((l) => l.business === b);
-    const plan = [{ i: 1, age: 4 }, { i: 2, age: 30 }, { i: 3, age: 20, paidAfter: 5 }, { i: 4, age: 6 }, { i: 5, age: 2 }];
+    const plan = [
+      { i: 1, age: 4, h: 9, m: 14, s: 5 }, { i: 2, age: 30, h: 11, m: 2, s: 47 }, { i: 3, age: 20, paidAfter: 5, h: 15, m: 38, s: 12 },
+      { i: 4, age: 6, h: 10, m: 51, s: 30 }, { i: 5, age: 2, h: 17, m: 6, s: 22 }
+    ];
     plan.forEach((p) => {
       const lead = list[p.i];
       if (!lead || !lead.amount) return;
-      const issued = now - DAY * p.age;
+      const day = new Date(now - DAY * p.age);
+      day.setHours(p.h, p.m, p.s, 0);
+      const issued = day.getTime();
       state.invoices.push({
         no: state.nextInv++, code: makeInvCode(issued, takenCodes()), business: b, leadId: lead.id, custName: lead.name, amount: lead.amount,
         issued, due: issued + 14 * DAY,
