@@ -14,7 +14,7 @@ function emptyBucket() {
 }
 
 function freshState() {
-  return { schema: SCHEMA_VERSION, session: null, accounts: [], activeBiz: null, theme: 'light', collapsed: true, buckets: {} };
+  return { schema: SCHEMA_VERSION, session: null, accounts: [], activeBiz: null, theme: 'light', colorway: 'sky-blue', collapsed: true, buckets: {} };
 }
 
 /** داده‌ی خراب یا ناقص را به ساختار فعلی تبدیل می‌کند (برای سازگاری با نسخه‌های بعدی) */
@@ -22,6 +22,7 @@ function normalize(raw) {
   const s = Object.assign(freshState(), raw && typeof raw === 'object' ? raw : {});
   s.buckets = s.buckets && typeof s.buckets === 'object' ? s.buckets : {};
   s.accounts = Array.isArray(s.accounts) ? s.accounts : [];
+  if (typeof s.colorway !== 'string') s.colorway = 'sky-blue';
   for (const key of Object.keys(BUSINESSES)) {
     const b = Object.assign(emptyBucket(), s.buckets[key] || {});
     b.customers = Array.isArray(b.customers) ? b.customers : [];
@@ -97,6 +98,11 @@ export function nextId(field, key = state.activeBiz) {
 
 export function setTheme(theme) {
   state.theme = theme === 'dark' ? 'dark' : 'light';
+  touch();
+}
+
+export function setColorway(id) {
+  state.colorway = typeof id === 'string' ? id : 'sky-blue';
   touch();
 }
 

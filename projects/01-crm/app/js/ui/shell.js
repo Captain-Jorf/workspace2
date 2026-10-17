@@ -12,6 +12,7 @@ import { openCustomerForm } from '../features/customerForm.js';
 import { openSettings } from '../features/settings.js';
 import { openPalette } from './palette.js';
 import * as auth from '../domain/auth.js';
+import { applyTheme } from './theme.js';
 
 const ctx = { view: 'today', filter: 'all', query: '' };
 let mounted = null;
@@ -115,9 +116,6 @@ function toggleTheme() {
   buildHeaderActions();
 }
 
-export function applyTheme() {
-  document.documentElement.dataset.theme = db.current().theme === 'dark' ? 'dark' : 'light';
-}
 
 function go(viewId) {
   closeDialog();

@@ -1,5 +1,5 @@
 // service worker: پوسته‌ی برنامه را برای کار آفلاین کش می‌کند (شبکه‌ی اول، سپس کش)
-const VERSION = 'crm-v5-2026-10-17';
+const VERSION = 'crm-v6-2026-10-17';
 const SHELL = [
   './', 'index.html', 'manifest.webmanifest',
   'css/app.css', 'css/print.css', 'assets/icon.svg',
@@ -15,7 +15,10 @@ const SHELL = [
   'js/features/extraFields.js', 'js/features/importMerge.js', 'js/features/invoiceForm.js',
   'js/features/invoiceShare.js', 'js/features/noteForm.js', 'js/features/settings.js',
   'js/views/index.js', 'js/views/common.js', 'js/views/today.js', 'js/views/notices.js',
-  'js/views/customers.js', 'js/views/invoices.js', 'js/views/notes.js', 'js/views/archive.js', 'js/views/reports.js'
+  'js/views/customers.js', 'js/views/invoices.js', 'js/views/notes.js', 'js/views/archive.js', 'js/views/reports.js',
+  'js/config/colorways.js',
+  'js/ui/palette.js',
+  'js/ui/theme.js',
 ];
 
 self.addEventListener('install', (event) => {

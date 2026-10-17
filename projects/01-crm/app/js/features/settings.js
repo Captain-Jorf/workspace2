@@ -8,6 +8,8 @@ import * as auth from '../domain/auth.js';
 import { downloadBlob } from '../core/download.js';
 import { openDialog, closeDialog, confirmDialog, toast } from '../ui/dialog.js';
 import { showAccountDialog } from '../ui/start.js';
+import { applyTheme } from '../ui/theme.js';
+import { COLORWAYS } from '../config/colorways.js';
 
 /** openSettings({ onChange, onSwitch }) */
 export function openSettings({ onChange = () => {}, onSwitch = () => {} } = {}) {
@@ -26,7 +28,7 @@ export function openSettings({ onChange = () => {}, onSwitch = () => {} } = {}) 
     class: 'chip', type: 'button', 'aria-pressed': String(db.current().theme === value),
     onClick: () => {
       db.setTheme(value);
-      document.documentElement.dataset.theme = value === 'dark' ? 'dark' : 'light';
+      applyTheme();
       closeDialog();
       onChange();
       openSettings({ onChange, onSwitch });
@@ -60,8 +62,27 @@ export function openSettings({ onChange = () => {}, onSwitch = () => {} } = {}) 
     h('div', { class: 'row-actions' },
       h('button', { class: 'btn ghost', type: 'button', onClick: () => { closeDialog(); onSwitch(); } }, 'تغییر کسب‌وکار')));
 
+  const colorwayBtns = COLORWAYS.map((cw) => {
+    const swatch = h('span', { class: 'cw-swatch', 'aria-hidden': 'true' });
+    swatch.style.background = `linear-gradient(135deg, ${cw.accent} 0 55%, ${cw.tint} 55% 100%)`;
+    return h('button', {
+      class: 'cw-item', type: 'button', role: 'radio', title: cw.name,
+      'aria-checked': String(db.current().colorway === cw.id),
+      onClick: () => {
+        db.setColorway(cw.id);
+        applyTheme();
+        closeDialog();
+        onChange();
+        openSettings({ onChange, onSwitch });
+      }
+    }, swatch, h('span', { class: 'cw-name', text: cw.name }));
+  });
+
   const themeBlock = section('ظاهر',
-    h('div', { class: 'row-actions', role: 'group', 'aria-label': 'حالت نمایش' }, themeBtns));
+    h('p', { class: 'muted', text: 'حالت نمایش' }),
+    h('div', { class: 'row-actions', role: 'group', 'aria-label': 'حالت نمایش' }, themeBtns),
+    h('p', { class: 'muted', text: `رنگ‌بندی (${COLORWAYS.length} گزینه)` }),
+    h('div', { class: 'cw-grid', role: 'radiogroup', 'aria-label': 'رنگ‌بندی' }, ...colorwayBtns));
 
   openDialog({
     kind: 'drawer',
