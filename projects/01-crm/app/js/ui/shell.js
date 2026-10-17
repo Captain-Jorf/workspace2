@@ -118,7 +118,7 @@ export function renderAll() {
   buildNav();
   $('#userName').textContent = s.session.name;
   $('#userRole').textContent = ROLES[s.session.role]?.label || '';
-  $('#paletteBtn').textContent = `${t('btn.palette')} · Ctrl+K`;
+  $('#paletteBtn').textContent = t('btn.palette');
   $('#switchBiz').textContent = t('btn.switchBiz');
   $('#q').placeholder = t('btn.search');
   $('#footnote').textContent = `${cfg.title} · ${t('set.storageOk')}`;

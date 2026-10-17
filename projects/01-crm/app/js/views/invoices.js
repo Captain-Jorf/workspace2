@@ -1,6 +1,6 @@
 // فاکتورها: چیدمان دو ستونه (فهرست + جزئیات). دکمه‌های عملیات: ثبت پرداخت، ویرایش، کپی، چاپ، اشتراک‌گذاری، حذف.
 import { h } from '../core/dom.js';
-import { money, parseMoney, plural } from '../core/format.js';
+import { money, parseMoney, plural, toEn } from '../core/format.js';
 import { formatDate, formatDateTime } from '../core/jalali.js';
 import { BUSINESSES } from '../config/businesses.js';
 import { can } from '../config/roles.js';
@@ -31,7 +31,13 @@ export function render(root, { refresh }) {
   const role = store.get().session?.role;
   const writable = can(role, 'invoice.write');
   const now = Date.now();
-  const rows = inv.list(ctx.invFilter, key, now);
+  const q = toEn(ctx.query || '').trim().toLowerCase();
+  const rows = inv.list(ctx.invFilter, key, now).filter((i) => {
+    if (!q) return true;
+    const c = cust.byId(i.customerId, key);
+    const hay = [i.no, c?.name, c?.phone, ...(i.items || []).map((it) => it.title)].join(' ');
+    return toEn(hay).toLowerCase().includes(q);
+  });
 
   const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'فیلتر فاکتور' },
     ...inv.INVOICE_FILTERS.map((f) => h('button', {
