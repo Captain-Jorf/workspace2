@@ -10,6 +10,7 @@ import { renderStart, showRoleDialog, showAccountDialog } from './start.js';
 import { VIEWS, NAV } from '../views/index.js';
 import { openCustomerForm } from '../features/customerForm.js';
 import { openSettings } from '../features/settings.js';
+import { openPalette } from './palette.js';
 import * as auth from '../domain/auth.js';
 
 const ctx = { view: 'today', filter: 'all', query: '' };
@@ -92,6 +93,7 @@ function buildHeaderActions() {
       'اطلاعیه‌ی جدید', h('kbd', {}, 'N')));
     box.append(h('button', { class: 'btn', type: 'button', id: 'btnNewCustomer', onClick: () => newCustomer() }, 'مشتری جدید'));
   }
+  box.append(h('button', { class: 'btn ghost palette-btn', type: 'button', id: 'btnPalette', onClick: () => openCommandPalette(), 'aria-label': 'پالت فرمان و جستجوی سراسری' }, 'جستجو و دستور ', h('kbd', {}, '⌘K')));
   box.append(h('button', { class: 'icon-btn theme-btn', type: 'button', id: 'themeBtn', 'aria-label': 'تغییر حالت شب و روز', title: 'حالت شب / روز', onClick: toggleTheme }, db.current().theme === 'dark' ? '☀' : '☾'));
 }
 
@@ -193,8 +195,24 @@ function switchBusiness() {
 }
 
 /** ورودهای کلیدی: / برای جستجو، N برای اطلاعیه‌ی جدید، Escape برای بستن */
+function paletteActions() {
+  return [
+    { label: 'اطلاعیه‌ی جدید', run: () => newNotice() },
+    { label: 'مشتری جدید', run: () => newCustomer() },
+    { label: 'تنظیمات', run: () => openSettings({ onChange: scheduleRender, onSwitch: switchBusiness }) },
+    { label: 'تغییر کسب‌وکار', run: () => switchBusiness() },
+    { label: 'تغییر حالت شب و روز', run: () => toggleTheme() }
+  ];
+}
+
+function openCommandPalette() {
+  if (!db.activeBizKey() || !$start().hidden) return;
+  openPalette({ go, actions: paletteActions() });
+}
+
 function bindKeys() {
   document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openCommandPalette(); return; }
     if (e.key === 'Escape') { closeDialog(); return; }
     const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName || '');
     if (typing || isDialogOpen() || !db.activeBizKey()) return;
